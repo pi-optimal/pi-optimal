@@ -1,26 +1,23 @@
 <p align="center">
-    <img src="https://raw.githubusercontent.com/pi-optimal/pi_optimal/main/media/logo.png" alt="pi_optimal Logo" width="250"/>
+    <img src="media/logo.png" alt="pi_optimal Logo" width="250"/>
 </p>
 
 <p align="center">
-    <a href="https://github.com/pi-optimal/pi_optimal/releases">
-        <img src="https://img.shields.io/github/v/release/pi-optimal/pi_optimal?color=blue" alt="Latest Release"/>
+    <a href="https://github.com/pi-optimal/pi-optimal/releases">
+        <img src="https://img.shields.io/github/v/release/pi-optimal/pi-optimal?color=blue" alt="Latest Release"/>
     </a>
-    <a href="https://github.com/pi-optimal/pi_optimal/actions/workflows/ci.yml">
-        <img src="https://github.com/pi-optimal/pi_optimal/actions/workflows/ci.yml/badge.svg" alt="Build Status"/>
-    </a>
-    <a href="https://github.com/pi-optimal/pi_optimal/blob/main/LICENSE">
-        <img alt="License" src="https://img.shields.io/github/license/pi-optimal/pi_optimal?color=green"/>
+    <a href="https://github.com/pi-optimal/pi-optimal/blob/main/LICENSE">
+        <img alt="License" src="https://img.shields.io/github/license/pi-optimal/pi-optimal"/>
     </a>
 </p>
 
 <p align="center">
     <strong>
-        <a href="https://pi-optimal.io">Website</a>
+        <a href="https://pi-optimal.com">Website</a>
         •
         <a href="https://pi-optimal.readthedocs.io/en/stable/">Docs</a>
         •
-        <a href="https://join.slack.com/t/pioptimal/shared_invite/xyz">Community Slack</a>
+        <a href="https://join.slack.com/t/pioptimal/shared_invite/zt-2w4z32qtt-Q7EdDvmSi9vWFCPb22_qVA">Community Slack</a>
     </strong>
 </p>
 
@@ -37,7 +34,7 @@ Built for data scientists, RL practitioners, and developers, `pi_optimal`:
 - Integrates easily with **custom reward functions**, empowering you to tailor the agent’s objectives to your business goals.
 - Facilitates **multi-step planning**, allowing you to look ahead and optimize future outcomes, not just the immediate next step.
 
-If you find `pi_optimal` useful, consider joining our [community Slack](https://join.slack.com/t/pioptimal/shared_invite/xyz) and give us a ⭐ on GitHub!
+If you find `pi_optimal` useful, consider joining our [community Slack](https://join.slack.com/t/pioptimal/shared_invite/zt-2w4z32qtt-Q7EdDvmSi9vWFCPb22_qVA) and give us a ⭐ on GitHub!
 
 ---
 
@@ -68,74 +65,44 @@ In dynamic and complex systems, even experienced operators can struggle to find 
 `pi_optimal` currently relies on [Poetry](https://python-poetry.org/) for installation. Make sure you have Poetry installed, then clone the repository and install:
 
 ```bash
-git clone https://github.com/pi-optimal/pi_optimal.git
+git clone https://github.com/pi-optimal/pi-optimal.git
 cd pi_optimal
 poetry install
 ```
 
 ## Example Usage
 
-Below is a simplified excerpt demonstrating how `pi_optimal` can be applied to optimize ad delivery. For a more detailed walkthrough, refer to the [notebooks](./examples).
+Below is a simplified excerpt demonstrating how `pi_optimal` can be applied to optimize ad delivery. For a more detailed walkthrough, refer to the [notebooks](./notebooks).
 
 ```python
-import pi_optimal as po
 import pandas as pd
+import pi_optimal as po
 
-# Load historical dataset
-df_historical = pd.read_csv('data/historical_adset_control.csv', parse_dates=['created_at'])
+# Load historical room climate control data
+df_room_history = pd.read_csv('room_climate_history.csv')
 
-# Define state, action, and reward columns
-state_cols = [
-    'hour_of_day', 'day_of_week', 'adset_impressions_diff', 
-    'adset_settings_total_budget', 'adset_settings_remaining_hours', 
-    'adset_targetings_total_population'
-]
-
-action_cols = [
-    'adset_settings_maximum_cpm', 'adset_targetings_frequency_capping_requests', 
-    'adset_settings_bidding_strategy', 'adset_settings_pacing_type'
-]
-
-reward_col = 'reward'
-timestamp_col = 'created_at'
-unit_col = 'unit_index'
-
-# Create a TimeseriesDataset
-LOOKBACK_TIMESTEPS = 8
-historical_dataset = po.datasets.timeseries_dataset.TimeseriesDataset(
-    df=df_historical,
-    state_columns=state_cols,
-    action_columns=action_cols,
-    reward_column=reward_col,
-    timestep_column=timestamp_col,
-    unit_index=unit_col,
-    lookback_timesteps=LOOKBACK_TIMESTEPS
+# Prepare dataset: define states (e.g., room conditions), actions (e.g., heater settings), and reward (e.g., comfort level)
+climate_dataset = po.datasets.TimeseriesDataset(
+    df_room_history,
+    state_columns=['temperature', 'humidity'],
+    action_columns=['heater_power'],
+    reward_column='comfort_score',
+    timestep_column='timestamp',
+    unit_index='room_id',
+    lookback_timesteps=8
 )
 
-# Initialize and train an RL agent (MPC-based continuous agent as example)
-from pi_optimal.agents.agent import Agent
+# Train a reinforcement learning agent for climate control
+climate_agent = po.Agent(dataset=climate_dataset, type="mpc-continuous", config={"uncertainty_weight": 0.5})
+climate_agent.train()
 
-agent = Agent(
-    dataset=historical_dataset,
-    type="mpc-continuous",
-    config={"uncertainty_weight": 0.5}
-)
+# Load current room data to predict next actions
+df_current_conditions = pd.read_csv('current_room_conditions.csv')
+current_dataset = po.datasets.TimeseriesDataset(df_current_conditions, dataset_config=climate_dataset.dataset_config, lookback_timesteps=8, train_processors=False)
 
-agent.train()
-
-# Load current data and predict optimal actions
-df_current = pd.read_csv('data/current_adset_control.csv', parse_dates=['created_at'])
-df_current['reward'] = df_current.apply(your_reward_function, axis=1)  # define a custom reward function
-
-current_dataset = po.datasets.timeseries_dataset.TimeseriesDataset(
-    df=df_current,
-    dataset_config=historical_dataset.dataset_config,
-    lookback_timesteps=LOOKBACK_TIMESTEPS,
-    train_processors=False
-)
-
-best_actions = agent.predict(current_dataset, inverse_transform=True, n_iter=15)
-print("Recommended actions:\n", best_actions)
+# Predict optimal heater settings for improved comfort
+optimal_actions = climate_agent.predict(current_dataset)
+print(optimal_actions)
 ```
 
 ---
@@ -173,9 +140,9 @@ print("Recommended actions:\n", best_actions)
 
 We welcome contributions from the community! If you have feature requests, bug reports, or want to contribute code:
 
-- Open an issue on [GitHub Issues](https://github.com/pi-optimal/pi_optimal/issues).
+- Open an issue on [GitHub Issues](https://github.com/pi-optimal/pi-optimal/issues).
 - Submit a pull request with your proposed changes.
-- Join our [Slack community](https://join.slack.com/t/pioptimal/shared_invite/xyz) to ask questions, share ideas, or get help.
+- Join our [Slack community](https://join.slack.com/t/pioptimal/shared_invite/zt-2w4z32qtt-Q7EdDvmSi9vWFCPb22_qVA) to ask questions, share ideas, or get help.
 
 A big thanks to all contributors who make `pi_optimal` better every day!
 
@@ -183,17 +150,17 @@ A big thanks to all contributors who make `pi_optimal` better every day!
 
 # 🙋 Get Help
 
-If you have questions or need assistance, the fastest way to get answers is via our [community Slack channel](https://join.slack.com/t/pioptimal/shared_invite/xyz). Drop by and say hello!
+If you have questions or need assistance, the fastest way to get answers is via our [community Slack channel](https://join.slack.com/t/pioptimal/shared_invite/zt-2w4z32qtt-Q7EdDvmSi9vWFCPb22_qVA). Drop by and say hello!
 
 ---
 
 # 🌱 Roadmap
 
-Check out our [roadmap](https://github.com/pi-optimal/pi_optimal/projects) to see what we’re working on next. Have suggestions or would like to see a new feature prioritized? Let us know in our Slack or open an issue.
+Check out our [roadmap](https://github.com/pi-optimal/pi-optimal/projects) to see what we’re working on next. Have suggestions or would like to see a new feature prioritized? Let us know in our Slack or open an issue.
 
 ---
 
 # 📜 License
 
-`pi_optimal` is distributed under the Apache License, Version 2.0. See [LICENSE](LICENSE) for details.
+`pi_optimal` is distributed under the GNU Affero General Public License (AGPL). See [LICENSE](LICENSE) for details.
 
