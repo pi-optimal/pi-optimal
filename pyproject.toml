@@ -1,0 +1,56 @@
+[tool.poetry]
+name = "pi-optimal"
+version = "0.1.0"
+description = "Python package for easy, data-efficient RL-based decision-making in business applications."
+authors = ["Jochen Luithardt <jol@pi-optimal.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+pandas = "^2.2.2"
+numpy = "^1.25.0"
+jupyter = {version = "^1.0.0", optional = true}
+torch = [
+    { version = "2.2.0", source = "pypi", markers = "sys_platform == 'darwin'"},
+    { version = "2.2.0", source = "pypi", markers = "platform_machine == 'aarch64' and sys_platform != 'darwin'"},
+    { version = "2.2.0", source = "pytorch_cpu", markers = "platform_machine == 'x86_64' and sys_platform != 'darwin'" },
+]
+tqdm = "^4.66.4"
+scikit-learn = "^1.5.1"
+gymnasium = {extras = ["box2d"], version = "^0.29.1"}
+matplotlib = "^3.9.1.post1"
+ipywidgets = "^8.1.5"
+ipysheet= "^0.7.0"
+plotly = "^5.24.1"
+nbformat = "^5.10.4"
+ipykernel = "^6.29.5"
+
+
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.4.2"
+pytest = "^8.3.2"
+mypy = "^1.11.1"
+wandb = "^0.17.5"
+pandas-stubs = "^2.2.2.240603"
+types-tqdm = "^4.66.0.20240417"
+
+
+[tool.poetry.group.doc.dependencies]
+sphinx = "^7.3.0"
+sphinx-autobuild = "^2024.4.16"
+sphinxawesome-theme = "^5.2.0"
+
+[tool.poetry.extras]
+notebook = ["jupyter", "ipykernel"]
+
+
+[[tool.poetry.source]]
+name = "pytorch_cpu"
+url = "https://download.pytorch.org/whl/cpu"
+priority = "explicit"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

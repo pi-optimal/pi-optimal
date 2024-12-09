@@ -1,0 +1,14 @@
+
+sweeps/
+wandb/
+
+.vscode/
+
+dist/
+docs/
+experiments/
+
+__pycache__/
+notebook_archive/
+
+.DS_Store
