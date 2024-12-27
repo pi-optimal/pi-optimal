@@ -62,13 +62,27 @@ In dynamic and complex systems, even experienced operators can struggle to find 
 
 ## Installation
 
-`pi_optimal` currently relies on [Poetry](https://python-poetry.org/) for installation. Make sure you have Poetry installed, then clone the repository and install:
+`pi_optimal` uses [Poetry](https://python-poetry.org/) for dependency management and installation. Follow these steps to get started:
 
-```bash
-git clone https://github.com/pi-optimal/pi-optimal.git
-cd pi_optimal
-poetry install
-```
+1. **Ensure you are not within a virtual environment** (e.g., deactivate it with `conda deactivate` if using Conda).  
+2. **Install Poetry** (if you don’t already have it):
+
+    ```bash
+    pipx install poetry
+    ```
+
+3. **Clone the repository** and navigate to its directory:
+
+    ```bash
+    git clone https://github.com/pi-optimal/pi-optimal.git
+    cd pi-optimal
+    ```
+
+4. **Install dependencies** using Poetry:
+
+    ```bash
+    poetry install
+    ```
 
 ## Example Usage
 
