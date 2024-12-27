@@ -84,6 +84,9 @@ In dynamic and complex systems, even experienced operators can struggle to find 
     poetry install
     ```
 
+Once you've completed the installation, you can open any notebook from the [notebooks](./notebooks) directory. To use the installed environment, select the newly created virtual environment in your Jupyter kernel selection. It should appear with a name similar to `pi-optimal-xyz-py3.10`.
+
+
 ## Example Usage
 
 Below is a simplified excerpt demonstrating how `pi_optimal` can be applied to optimize ad delivery. For a more detailed walkthrough, refer to the [notebooks](./notebooks).
