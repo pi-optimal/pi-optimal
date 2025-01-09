@@ -10,32 +10,7 @@ class Agent():
     def __init__(self, dataset: BaseDataset, type: str, config: dict = None):
         self.dataset = dataset
         self.type = type
-        self.config = config
-        self.default_params = {"horizon": 4,
-                               "population_size": 1000,
-                                "topk": 100,
-                                "uncertainty_weight": 0.1,
-                                "constraints": None,
-                                }
-        config_with_defaults = self.default_params.copy()
-        config_with_defaults.update(config or {})
-
-        if "constraints" not in config_with_defaults or config_with_defaults["constraints"] is None:
-            min_values = []
-            max_values = []
-            for action_key in dataset.dataset_config["actions"]:
-                action = dataset.dataset_config["actions"][action_key]
-                action_name = action["name"]
-
-                action_min, action_max = dataset.df[action_name].min(), dataset.df[action_name].max()
-
-                transformed_min, transformed_max = action["processor"].transform([[action_min], [action_max]])
-                min_values.append(transformed_min[0])
-                max_values.append(transformed_max[0])
-
-            config_with_defaults["constraints"] = {"min": np.array(min_values), "max": np.array(max_values)}
-
-        self.config = config_with_defaults
+        self.config = self._init_config(config)
 
         if type == "mpc-discrete":
             self.policy = CEMDiscretePlanner(action_dim=dataset.actions.shape[1],
@@ -53,7 +28,37 @@ class Agent():
                                             constraints=self.config["constraints"])
         else:
             raise NotImplementedError
+    
+    def _init_config(self, config):
+        self.default_params = {"horizon": 4,
+                        "population_size": 1000,
+                        "topk": 100,
+                        "uncertainty_weight": 0.1,
+                        "constraints": None,
+                        }
+        config_with_defaults = self.default_params.copy()
+        config_with_defaults.update(config or {})
+
         
+        min_values = []
+        max_values = []
+        for action_key in self.dataset.dataset_config["actions"]:
+            action = self.dataset.dataset_config["actions"][action_key]
+            action_name = action["name"]
+
+            if "constraints" not in config_with_defaults or config_with_defaults["constraints"] is None:
+                action_min, action_max = self.dataset.df[action_name].min(), self.dataset.df[action_name].max()
+            else:
+                action_min, action_max = config_with_defaults["constraints"]["min"][action_key], config_with_defaults["constraints"]["max"][action_key]
+
+            transformed_min, transformed_max = action["processor"].transform([[action_min], [action_max]])
+            min_values.append(transformed_min[0])
+            max_values.append(transformed_max[0])
+    
+        config_with_defaults["constraints"] = {"min": np.array(min_values), "max": np.array(max_values)}
+
+        return config_with_defaults
+
     def train(self):
         if self.type == "mpc-discrete" or self.type == "mpc-continuous":
 
