@@ -1,6 +1,7 @@
 import numpy as np
+from tqdm import tqdm
 import pickle
-
+from torch.utils.data import DataLoader
 
 class BaseModel:
     
@@ -11,8 +12,20 @@ class BaseModel:
     def predict(self, X):
         X = np.array(X, dtype=np.float32)
 
-        X_hat = np.array([model.predict(X) for model in self.models], dtype=np.float32).T
-        return X_hat
+        # Predict all features except the reward
+        next_state = []
+        for i, model in enumerate(self.models):
+            if i != self.dataset_config["reward_feature_idx"]:
+                feature_next_state = model.predict(X)
+                next_state.append(feature_next_state)
+        
+        # Predict the reward from the next state
+        next_state = np.array(next_state).T
+        reward_idx = self.dataset_config["reward_vector_idx"]
+        reward = self.models[self.dataset_config["reward_feature_idx"]].predict(next_state)
+        next_state = np.insert(next_state, reward_idx, reward, axis=1)
+
+        return next_state
 
     def forward(self, state, action):
         X = self._prepare_input_data(state, action)
@@ -73,3 +86,34 @@ class BaseModel:
         feature_end_idx = feature["feature_end_idx"]
         return y[:, feature_begin_idx:feature_end_idx].ravel()
 
+        
+    def fit(self, dataset):
+
+        self.dataset_config = dataset.dataset_config
+
+        dataloader = DataLoader(
+            dataset, batch_size=len(dataset), shuffle=False, num_workers=0
+        )
+        past_states, past_actions, future_states, _ = next(iter(dataloader))
+        X = self._prepare_input_data(past_states, past_actions)
+        y = self._prepare_target_data(future_states)
+
+        self.dataset_config = dataloader.dataset.dataset_config
+
+        self.models = [
+            self._create_estimator(self.dataset_config["states"][state_idx]["type"])
+            for state_idx in self.dataset_config["states"]
+        ]
+
+        # Fit all models except the reward model
+        for i, model in enumerate(tqdm(self.models)):
+            if i != self.dataset_config["reward_feature_idx"]:
+                y_target = self._get_target_for_feature(y, i)
+                model.fit(X, y_target)
+            else:
+                reward_idx = self.dataset_config["reward_vector_idx"]
+                target_reward = self._get_target_for_feature(y, i)
+                next_state = y
+                next_state_wo_reward = np.delete(next_state, reward_idx, axis=1)
+                model.fit(next_state_wo_reward, target_reward)
+            
