@@ -3,13 +3,9 @@ from tqdm import tqdm
 from .cem_planner import CEMPlanner
 
 class CEMDiscretePlanner(CEMPlanner):
-    def __init__(self, action_dim, horizon, population_size, topk, uncertainty_weight=5.0):
-        super().__init__(action_dim, horizon, population_size, topk)
+    def __init__(self, action_dim):
+        super().__init__(action_dim)
 
-        self.action_dim = action_dim
-        self.mu = np.zeros((self.horizon, self.action_dim))
-        self.sigma = np.ones((self.horizon, self.action_dim))
-        self.uncertainty_weight = uncertainty_weight
         self.mean_costs = None
         self.std_costs = None
 
@@ -53,44 +49,6 @@ class CEMDiscretePlanner(CEMPlanner):
 
         return model_predictions
     
-    def evaluate_trajectories(self, ensemble_trajectories, objective_function):
-        '''
-        Evaluate the actions using the model predictions and the objective function.
-        '''
-        num_models = len(ensemble_trajectories)
-        population_size = self.population_size
-
-        # ensemble_trajectories: list of arrays, each with shape (population_size, horizon, state_dim)
-        # Stack trajectories to shape (num_models, population_size, horizon, state_dim)
-        ensemble_trajectories = np.array(ensemble_trajectories)
-
-        # Initialize costs array
-        costs_per_model = np.zeros((num_models, population_size))
-
-        # Compute costs for each model
-        for idx in range(num_models):
-            costs_per_model[idx] = np.array([objective_function(traj) for traj in ensemble_trajectories[idx]])
-
-        # Compute mean cost across models for each trajectory
-        mean_costs = np.mean(costs_per_model, axis=0)  # Shape: (population_size,)
-
-        # Compute variance of costs across models (uncertainty)
-        state_uncertainty = np.var(ensemble_trajectories, axis=(0, 2, 3))  # Adjust axes as needed
-
-        # Min-max normalization directly
-        epsilon = 1e-8  # Small constant to prevent division by zero
-        mean_costs_normalized = (mean_costs - mean_costs.min()) / (mean_costs.max() - mean_costs.min() + epsilon)
-        state_uncertainty_normalized = (state_uncertainty - state_uncertainty.min()) / (state_uncertainty.max() - state_uncertainty.min() + epsilon)
-
-        # Combine mean cost and uncertainty
-        total_costs = (1 - self.uncertainty_weight) * mean_costs_normalized + self.uncertainty_weight * state_uncertainty_normalized
-
-        # Calculate cost and uncertainty contribution
-        cost_contribution = ((1 - self.uncertainty_weight) * mean_costs_normalized) / (total_costs + epsilon)
-        uncertainty_contribution = (self.uncertainty_weight * state_uncertainty_normalized) / (total_costs + epsilon)
-
-        return total_costs, cost_contribution, uncertainty_contribution
-
     def update_distribution(self, actions_logits, costs):
         elite_idx = np.argsort(costs)[:self.topk]
         elite_actions = actions_logits[elite_idx, :, :]
@@ -99,4 +57,12 @@ class CEMDiscretePlanner(CEMPlanner):
 
     def get_action_sequence(self):
         return np.argmax(self.mu, axis=1)
+    
+    def plan(self, models, starting_state, action_history, objective_function, n_iter = 10, allow_sigma = False, horizon = 4, population_size = 1000, topk = 100, uncertainty_weight = 0.5, reset_planer = True):
+        
+        if self.mu is None or reset_planer:
+            self.mu = np.zeros((horizon, self.action_dim))
+            self.sigma = np.ones((horizon, self.action_dim))
+            
+        return super().plan(models, starting_state, action_history, objective_function, n_iter, allow_sigma, horizon, population_size, topk, uncertainty_weight, reset_planer)
     
