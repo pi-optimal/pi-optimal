@@ -42,6 +42,8 @@ class TimeseriesDataset(BaseDataset):
         lookback_timesteps: int = 4,
         forecast_timesteps: int = 1,
         train_processors: bool = True,
+        is_inference: bool = False,
+        noise_intensity_on_past_states: float = 0.0,
     ):
         """
         Initialize the TimeseriesDataset.
@@ -52,9 +54,13 @@ class TimeseriesDataset(BaseDataset):
             lookback_timesteps (int, optional): Number of past timesteps to include. Defaults to 1.
             forecast_timesteps (int, optional): Number of future timesteps to predict. Defaults to 1.
             train_processors (bool, optional): Whether to train the feature processors. Defaults to True.
+            is_inference (bool, optional): Whether the dataset is used for inference. Defaults to False.
+            noise_intensity_on_past_states (float, optional): Intensity of noise to add to past states. Defaults to 0.0.
         """
         super().__init__(df, dataset_config, unit_index, timestep_column, reward_column, state_columns, action_columns)
         
+        self.is_inference = is_inference
+        self.noise_intensity_on_past_states = noise_intensity_on_past_states
 
         self.lookback_timesteps = lookback_timesteps
         self.forecast_timesteps = forecast_timesteps
@@ -211,10 +217,12 @@ class TimeseriesDataset(BaseDataset):
 
             if feature["name"] == self.reward_column:
                 self.reward_column_idx = feature_idx
+                self.dataset_config["reward_feature_idx"] = feature_idx
+                self.dataset_config["reward_vector_idx"] = feature["feature_begin_idx"]
 
             # Save the state and action size to the dataset_config
             self.dataset_config[feature_type + "_size"] = feature["feature_end_idx"]
-            
+
 
             transformed_features.append(transformed)
 
@@ -333,6 +341,15 @@ class TimeseriesDataset(BaseDataset):
         if use_padding:
             past_data, future_data = self._pad_data(past_data, future_data)
 
+        # Add noise to the past states
+        if self.noise_intensity_on_past_states > 0:
+            for state_idx in self.dataset_config["states"]:
+                state = self.dataset_config["states"][state_idx]
+                if state["type"] == 'numerical':
+                    past_data["states"][:, state["feature_begin_idx"]:state["feature_end_idx"]] += np.random.normal(
+                        0, self.noise_intensity_on_past_states, past_data["states"][:, state["feature_begin_idx"]:state["feature_end_idx"]].shape
+                    )
+
         return (
             past_data["states"],
             past_data["actions"],
@@ -344,7 +361,8 @@ class TimeseriesDataset(BaseDataset):
         self, index: int, episode_start_index: int
     ) -> Dict[str, np.ndarray]:
         """
-        Get the past states and actions for a specific index.
+        Get the past states and actions for a specific index. If the dataset is a inference dataset, 
+        the past data will include the current timestep.
 
         Args:
             index (int): Index of the data point.
@@ -354,9 +372,17 @@ class TimeseriesDataset(BaseDataset):
             Dict[str, np.ndarray]: Dictionary containing past states and actions.
         """
         past_start = max(episode_start_index, index - self.lookback_timesteps)
+
+        if self.is_inference:
+            end_index = index + 1
+            past_start += 1
+        else:
+            end_index = index
+            past_start = past_start
+
         return {
-            "states": self.states[past_start:index],
-            "actions": self.actions[past_start:index],
+            "states": self.states[past_start:end_index],
+            "actions": self.actions[past_start:end_index],
         }
 
     def _get_future_data(
