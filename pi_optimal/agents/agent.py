@@ -191,7 +191,7 @@ class Agent():
         )
 
         # Restore dataset configuration with deserialized processors
-        agent.dataset_config = deserialize_processors(config['dataset_config'])
+        agent.dataset_config = deserialize_processors(config['dataset_config'], path)
 
         # Load policy if exists
         if os.path.exists(f"{path}/policy_config.json"):

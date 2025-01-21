@@ -44,21 +44,22 @@ def serialize_processors(config: dict, path: str) -> dict:
     joblib.dump(processors_dict, processors_path)
     
     # Store the path to all processors
-    serialized_config['_processors_path'] = processors_path
+    serialized_config['_processors_path'] = "processors.pkl"
     return serialized_config
 
-def deserialize_processors(config: dict) -> dict:
+def deserialize_processors(config: dict, base_path: str) -> dict:
     """
     Converts processor strings back to objects by loading them.
 
     Args:
         config (dict): The configuration dictionary containing processor paths.
+        base_path (str): The base directory path where processors are saved.
 
     Returns:
         dict: The configuration dictionary with processor objects.
     """
     # Load all processors from the single file
-    processors_path = config.pop('_processors_path', None)
+    processors_path = os.path.join(base_path, config.pop('_processors_path', None))
     all_processors = joblib.load(processors_path) if processors_path else {}
     
     def _process_dict(d):
