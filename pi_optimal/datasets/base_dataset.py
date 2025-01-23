@@ -170,7 +170,7 @@ class BaseDataset(Dataset):
             logging.warning("Episodes are not continuous starting from the minimum episode number.")
             episode_mapping = {old: new for new, old in enumerate(unique_episodes)}
             self.df[episode_col] = self.df[episode_col].map(episode_mapping)
-            logging.warning("Adjusted episode numbering to start from 0 and be continuous.")
+            logging.info("Adjusted episode numbering to start from 0 and be continuous.")
 
         # Check and adjust timestep column within each episode
         def process_timesteps(group):
@@ -202,7 +202,7 @@ class BaseDataset(Dataset):
 
         # Let episode start from 0
         if self.df[self.dataset_config["episode_column"]].min() != 0:
-            logging.warning("Episode column does not start from 0")
+            logging.warning("Episode column does not start from 0, adjusting episode numbers.")
             self.df[self.dataset_config["episode_column"]] = self.df[self.dataset_config["episode_column"]] - self.df[self.dataset_config["episode_column"]].min()
 
         # Replace datetime timesteps with continuous integers
