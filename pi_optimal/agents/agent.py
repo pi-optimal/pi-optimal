@@ -23,8 +23,7 @@ class Agent():
     def __init__(self, name: str = "pi_optimal_agent"):                
         self.name = name
         self.status = "Initialized"
-
-    
+        
     def _init_constrains(self, dataset, constraints):
         
         min_values = []
@@ -139,7 +138,7 @@ class Agent():
             
             return actions
 
-    def save(self, path = '/agents'):
+    def save(self, path = 'agents/'):
         """Save the agent configuration and models."""
         validate_path(path)
         if self.status != "Trained":
@@ -155,6 +154,7 @@ class Agent():
         config = {
             'name': self.name,
             'type': self.type,
+            'status': self.status,            
             'version': '0.1',
             'created_at': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             'dataset_config': serialize_processors(self.dataset_config.copy(), agent_path)
@@ -188,10 +188,9 @@ class Agent():
 
         # Create agent instance
         agent = cls(
-            name=config['name'],
-            type=config['type']
+            name=config['name']
         )
-
+        agent.status = config['status']
         # Restore dataset configuration with deserialized processors
         agent.dataset_config = deserialize_processors(config['dataset_config'], path)
 
@@ -202,9 +201,10 @@ class Agent():
                 # Reconstruct policy based on type
                 if policy_config['type'] == "CEMDiscretePlanner":
                     agent.policy = CEMDiscretePlanner(action_dim=policy_config['params']['action_dim'])
+                    agent.type = "mpc-discrete"
                 elif policy_config['type'] == "CEMContinuousPlanner":
                     agent.policy = CEMContinuousPlanner(action_dim=policy_config, constraints=policy_config['params']['constraints'])
-                
+                    agent.type = "mpc-continuous"
                 # Restore policy parameters
                 for key, value in deserialize_policy_dict(policy_config['params']).items():
                     setattr(agent.policy, key, value)
