@@ -96,7 +96,7 @@ class Agent():
         self.status = "Trained"
 
     def objective_function(self, traj):
-        reward_idx = self.dataset_config['reward_feature_idx']
+        reward_idx = self.dataset_config['reward_vector_idx']
         return -sum(traj[:, reward_idx])       
 
     def predict(self, 
