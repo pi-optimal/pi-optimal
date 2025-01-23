@@ -184,8 +184,12 @@ class BaseDataset(Dataset):
                 # Ensure timesteps start from 0 and increment by 1
                 expected_timesteps = np.arange(len(group))
                 if not np.array_equal(timesteps.values, expected_timesteps):
-                    raise ValueError(
-                        f"Timesteps in episode {group[episode_col].iloc[0]} must start from 0 and increment by 1."
+                    logging.warning(
+                        f"Timesteps in episode {group[episode_col].iloc[0]} do not start from 0 and increment by 1. Adjusting timesteps."
+                    )
+                    group[timestep_col] = expected_timesteps
+                    logging.info(
+                        f"Adjusted timesteps in episode {group[episode_col].iloc[0]} to start from 0 and increment by 1."
                     )
             else:
                 raise ValueError(f"Timestep column '{timestep_col}' must be of integer or datetime type.")
