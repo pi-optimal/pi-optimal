@@ -20,8 +20,7 @@ import glob
 import datetime
 
 class Agent():
-    def __init__(self, name: str, type: str):        
-        self.type = type
+    def __init__(self, name: str = "pi_optimal_agent"):                
         self.name = name
         self.status = "Initialized"
 
@@ -48,6 +47,9 @@ class Agent():
         return constraints
 
     def train(self, dataset: BaseDataset, constraints: dict = None):
+
+        self.type = dataset.action_type
+
         if self.type == "mpc-discrete":
             self.policy = CEMDiscretePlanner(action_dim=dataset.actions.shape[1])
         elif self.type == "mpc-continuous":
