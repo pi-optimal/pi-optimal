@@ -254,7 +254,8 @@ class BaseDataset(Dataset):
         elif all(action_type in {"categorial", "binary"} for action_type in action_types):
             self.action_type = "mpc-discrete"
         else:
-            self.action_type = "mixed"
+            # If there are mixed action types, default to continuous
+            self.action_type = "mpc-continuous"
 
     def __len__(self) -> int:
         """Return the number of rows in the dataset.
