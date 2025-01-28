@@ -1,0 +1,15 @@
+campaign_id,date,day_of_week,impression_goal,daily_impressions,total_impressions,target_daily_impressions,target_total_impressions,missing_impressions,total_days,remaining_days,set_cpm,feed_facebook_status,instant_article_facebook_status,facebook_stories_facebook_status,marketplace_facebook_status,right_hand_column_facebook_status
+0,2019-10-25,Friday,45000,49.0,49.0,3000.0,3000.0,2951.0,15.0,13.0,1.0,Active,Active,Inactive,Active,Inactive
+0,2019-10-26,Saturday,45000,46.0,95.0,3000.0,6000.0,5905.0,15.0,12.0,1.0,Active,Active,Inactive,Active,Inactive
+0,2019-10-27,Sunday,45000,135.0,230.0,3000.0,9000.0,8770.0,15.0,11.0,1.0,Active,Active,Active,Active,Inactive
+0,2019-10-28,Monday,45000,814.0,1044.0,3000.0,12000.0,10956.0,15.0,10.0,2.0,Active,Active,Active,Active,Inactive
+0,2019-10-29,Tuesday,45000,795.0,1839.0,3000.0,15000.0,13161.0,15.0,9.0,2.0,Active,Active,Active,Active,Inactive
+0,2019-10-30,Wednesday,45000,1163.0,3002.0,3000.0,18000.0,14998.0,15.0,8.0,2.5,Active,Active,Active,Active,Inactive
+0,2019-10-31,Thursday,45000,1426.0,4428.0,3000.0,21000.0,16572.0,15.0,7.0,2.5,Active,Inactive,Active,Active,Inactive
+0,2019-11-01,Friday,45000,1969.0,6397.0,3000.0,24000.0,17603.0,15.0,6.0,2.5,Active,Inactive,Active,Active,Inactive
+0,2019-11-02,Saturday,45000,1666.0,8063.0,3000.0,27000.0,18937.0,15.0,5.0,2.5,Active,Inactive,Active,Active,Inactive
+0,2019-11-03,Sunday,45000,2569.0,10632.0,3000.0,30000.0,19368.0,15.0,4.0,2.5,Active,Inactive,Active,Active,Inactive
+0,2019-11-04,Monday,45000,3002.0,13634.0,3000.0,33000.0,19366.0,15.0,3.0,3.0,Active,Inactive,Active,Active,Inactive
+0,2019-11-05,Tuesday,45000,2337.0,15971.0,3000.0,36000.0,20029.0,15.0,2.0,3.0,Active,Inactive,Active,Active,Inactive
+0,2019-11-06,Wednesday,45000,1037.0,17008.0,3000.0,39000.0,21992.0,15.0,1.0,3.0,Active,Active,Active,Active,Inactive
+0,2019-11-07,Thursday,45000,939.0,17947.0,3000.0,42000.0,24053.0,15.0,0.0,3.0,Active,Active,Active,Active,Inactive
