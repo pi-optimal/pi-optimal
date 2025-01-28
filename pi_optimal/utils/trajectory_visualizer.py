@@ -62,6 +62,8 @@ class TrajectoryVisualizer:
         self.current_dataset = current_dataset
         self.best_actions = best_actions
         self.round_digits = round_digits
+        self.hash_id = np.random.randint(0, 100000)
+        self.logger = logging.getLogger(f"TrajectoryVisualizer-{self.hash_id}")
         
         # Check if lookback timesteps is greater than the dataset length
         if lookback_timesteps > len(self.current_dataset) - 2:
@@ -250,7 +252,7 @@ class TrajectoryVisualizer:
 
     def _resimulate_trajectories(self):
         """ Resimulates the trajectories with the new actions. """
-
+        self.logger.info("Resimulating trajectories with new actions...", "PROCESS")
         # Read the action array from the sheet
         action_values = []
         for cell in self.action_sheet.cells:
@@ -279,6 +281,7 @@ class TrajectoryVisualizer:
                 self.predicted_trajectories[i][0],
                 self.current_dataset.dataset_config["states"]
             )
+        self.logger.info("Trajectories resimulated successfully.", "SUCCESS")
 
     def _on_update_button_clicked(self, b):
         """ Callback function for the 'Simulate Trajectory' button. """
@@ -299,7 +302,7 @@ class TrajectoryVisualizer:
                 state_uncertainty = None
 
             self.saved_trajectories.append({
-                'actions': self.current_actions.round(2).copy(),
+                'actions': self.current_actions.copy(),
                 'trajectory': self.predicted_trajectories.copy(),
                 'uncertainty': state_uncertainty,
                 'label': f'Trajectory {len(self.saved_trajectories)+1}'
@@ -527,7 +530,8 @@ class TrajectoryVisualizer:
             for saved in self.saved_trajectories:
                 traj = saved['trajectory']
                 actions = saved['actions']
-                actions = actions.round(self.round_digits)
+                # round only numerical actions
+                actions = np.array([round(action[0], self.round_digits) for action in actions if isinstance(action[0], (int, float))]).reshape(-1, 1)
                 # Add a row of "nan" just to keep shape consistent with the new appended item
                 actions = np.concatenate([actions, np.array([["nan"] * actions.shape[1]])])
                 uncertainty = saved['uncertainty']
