@@ -175,7 +175,7 @@ class Agent():
         # Save models if they exist
         if hasattr(self, 'models') and self.models:
             for i, model in enumerate(self.models):
-                model.save(f"{agent_path}/models/model_{i}.pkl")
+                model.save(f"{agent_path}/models/model_{i}.joblib")
 
     @classmethod 
     def load(cls, path: str):
@@ -210,7 +210,7 @@ class Agent():
                     setattr(agent.policy, key, value)
 
         # Load models if they exist
-        model_files = glob.glob(f"{path}/models/model_*.pkl")
+        model_files = glob.glob(f"{path}/models/model_*.joblib")
         if model_files:
             agent.models = []
             for model_path in sorted(model_files):
