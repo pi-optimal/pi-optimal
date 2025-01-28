@@ -87,7 +87,7 @@ class BaseModel:
         return y[:, feature_begin_idx:feature_end_idx].ravel()
 
         
-    def fit(self, dataset):
+    def fit(self, dataset, sample_weight=None):
 
         self.dataset_config = dataset.dataset_config
 
@@ -109,11 +109,11 @@ class BaseModel:
         for i, model in enumerate(tqdm(self.models)):
             if i != self.dataset_config["reward_feature_idx"]:
                 y_target = self._get_target_for_feature(y, i)
-                model.fit(X, y_target)
+                model.fit(X, y_target, sample_weight=sample_weight)
             else:
                 reward_idx = self.dataset_config["reward_vector_idx"]
                 target_reward = self._get_target_for_feature(y, i)
                 next_state = y
                 next_state_wo_reward = np.delete(next_state, reward_idx, axis=1)
-                model.fit(next_state_wo_reward, target_reward)
+                model.fit(next_state_wo_reward, target_reward, sample_weight=sample_weight)
             
