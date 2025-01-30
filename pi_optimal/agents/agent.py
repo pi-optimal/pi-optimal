@@ -60,19 +60,20 @@ class Agent():
         
         self.dataset_config = dataset.dataset_config
         self.models = []
-        rf_reg = RandomForest(n_estimators=100, 
-                                max_depth=None, 
-                                n_jobs=-1,
-                                verbose=0,
-                                random_state=0)
-    
+        # rf_reg = RandomForest(n_estimators=100, 
+        #                         max_depth=None, 
+        #                         n_jobs=-1,
+        #                         verbose=0,
+        #                         random_state=0)
+        rf_reg = NeuralNetwork()    
         self.models.append(rf_reg)
 
-        rf_reg = RandomForest(n_estimators=100, 
-                                max_depth=None, 
-                                n_jobs=-1,
-                                verbose=0,
-                                random_state=1)
+        # rf_reg = RandomForest(n_estimators=100, 
+        #                         max_depth=None, 
+        #                         n_jobs=-1,
+        #                         verbose=0,
+        #                         random_state=1)
+        rf_reg = NeuralNetwork()
         self.models.append(rf_reg)
 
         n_models = len(self.models)
@@ -214,7 +215,7 @@ class Agent():
         if model_files:
             agent.models = []
             for model_path in sorted(model_files):
-                model = RandomForest.load(model_path) 
+                model = NeuralNetwork.load(model_path) 
                 agent.models.append(model)
 
         return agent
