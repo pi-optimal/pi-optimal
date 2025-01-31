@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Python package for easy, data-efficient RL-based decision-making in business applications."
 authors = [{ name = "pi-optimal UG (haftungsbeschränkt)", email = "hello@pi-optimal.com" }]
 readme = "README.md"
-license = { text = "AGPL-3.0-or-later" }
+license = "AGPL-3.0-or-later"
 keywords = [ "rl", "decision intelligence", "reinforcement learning", "decision-making", "pi", "optimal" ]
 
 
