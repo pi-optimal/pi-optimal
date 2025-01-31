@@ -19,8 +19,16 @@ import json
 import os
 import glob
 import datetime
+from typing import List, Dict
+
 
 class Agent():
+    MODEL_REGISTRY = {
+    "NeuralNetwork": NeuralNetwork,
+    "SupportVectorMachine": SupportVectorMachine, 
+    "RandomForest": RandomForest
+    }
+
     def __init__(self, name: str = "pi_optimal_agent"):                
         self.name = name
         self.status = "Initialized"
@@ -50,7 +58,7 @@ class Agent():
 
         return constraints
 
-    def train(self, dataset: BaseDataset, constraints: dict = None):
+    def train(self, dataset: BaseDataset, constraints: dict = None, model_config: List[Dict] = None):
         
         self.type = dataset.action_type
 
@@ -67,23 +75,22 @@ class Agent():
             self.logger.error(f"Agent type {self.type} not supported.")
             raise NotImplementedError
         
-        self.dataset_config = dataset.dataset_config
-        self.models = []
-        # rf_reg = RandomForest(n_estimators=100, 
-        #                         max_depth=None, 
-        #                         n_jobs=-1,
-        #                         verbose=0,
-        #                         random_state=0)
-        rf_reg = NeuralNetwork()    
-        self.models.append(rf_reg)
+        self.dataset_config = dataset.dataset_config        
 
-        # rf_reg = RandomForest(n_estimators=100, 
-        #                         max_depth=None, 
-        #                         n_jobs=-1,
-        #                         verbose=0,
-        #                         random_state=1)
-        rf_reg = NeuralNetwork()
-        self.models.append(rf_reg)
+        if model_config is None:
+            # Default configuration
+            model_config = [
+                {"model_type": "NeuralNetwork", "params": {}},
+                {"model_type": "NeuralNetwork", "params": {}}
+            ]
+
+        self._validate_models(model_config)
+        
+        self.models = []
+        for config in model_config:
+            model_cls = self.MODEL_REGISTRY[config["model_type"]]
+            model = model_cls(**config.get("params", {}))
+            self.models.append(model)
 
         n_models = len(self.models)
 
@@ -237,12 +244,30 @@ class Agent():
         return agent
     
 
-    def _validate_models(self):
-        """Validate that all required models are loaded correctly."""
-        if not self.models:
-            self.logger.error("No models found in agent")
-            raise ValueError("No models found in agent")
-        for model in self.models:
-            if not isinstance(model, (RandomForest, SupportVectorMachine, NeuralNetwork)):
-                self.logger.error(f"Invalid model type: {type(model)}")
-                raise TypeError(f"Invalid model type: {type(model)}")
+    def _validate_models(self, model_config: list) -> None:
+        """Validate model configuration structure and parameters."""
+        required_keys = {"model_type", "params"}
+        
+        for i, config in enumerate(model_config):
+            # Check required keys
+            missing_keys = required_keys - config.keys()
+            if missing_keys:
+                raise ValueError(
+                    f"Model config #{i+1} missing required keys: {missing_keys}"
+                )
+            
+            # Validate model type
+            model_type = config["model_type"]
+            if model_type not in self.MODEL_REGISTRY:
+                available_models = list(self.MODEL_REGISTRY.keys())
+                raise ValueError(
+                    f"Invalid model type '{model_type}' in config #{i+1}. "
+                    f"Available models: {available_models}"
+                )
+            
+            # Validate parameters type
+            if not isinstance(config["params"], dict):
+                raise TypeError(
+                    f"Parameters for model #{i+1} must be a dictionary, "
+                    f"got {type(config['params']).__name__}"
+                    )
