@@ -54,7 +54,7 @@ class Agent():
         
         self.type = dataset.action_type
 
-        self.logger_training = Logger(f"Agent-Training-{self.hash_id}")
+        self.logger_training = Logger(f"Agent-Training-{self.hash_id}-{np.random.randint(0, 100000)}")
         self.logger_training.info(f"Training agent of type {self.type}", "PROCESS")
 
         if self.type == "mpc-discrete":
@@ -121,7 +121,7 @@ class Agent():
                 uncertainty_weight: float = 0.5,
                 reset_planer: bool = True,
                 allow_sigma: bool = False):
-        self.logger_inference = Logger(f"Agent-Inference-{self.hash_id}")
+        self.logger_inference = Logger(f"Agent-Inference-{self.hash_id}-{np.random.randint(0, 100000)}")
         self.logger_inference.info(f"Searching for the optimal action sequence over a horizon of {horizon} steps.", "PROCESS")
         self.policy.logger = self.logger_inference
         
