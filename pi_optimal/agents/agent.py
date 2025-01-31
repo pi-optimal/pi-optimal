@@ -4,42 +4,41 @@ from pi_optimal.planners.cem_continuous import CEMContinuousPlanner
 from pi_optimal.models.random_forest_model import RandomForest
 from pi_optimal.models.svm import SupportVectorMachine
 from pi_optimal.models.mlp import NeuralNetwork
+from pi_optimal.utils.serialization import (
+    serialize_processors,
+    deserialize_processors,
+    serialize_policy_dict,
+    deserialize_policy_dict,
+    NumpyEncoder
+)
+from pi_optimal.utils.validation import validate_agent_directory, validate_path
 from pi_optimal.utils.logger import Logger
 from torch.utils.data import Subset
 import numpy as np
+import json
+import os
+import glob
+import datetime
 
 class Agent():
-    def __init__(self, dataset: BaseDataset, type: str, constraints: dict = None):
-        self.dataset = dataset
-        self.type = type
+    def __init__(self, name: str = "pi_optimal_agent"):                
+        self.name = name
+        self.status = "Initialized"
 
         self.hash_id = np.random.randint(0, 100000)
         self.logger = Logger(f"Agent-{self.hash_id}")
-
-        self.logger.info(f"Creating agent of type {type}", "PROCESS")
-
-        if type == "mpc-discrete":
-            self.policy = CEMDiscretePlanner(action_dim=dataset.actions.shape[1])
-        elif type == "mpc-continuous":
-            constraints = self._init_constrains(constraints)
-            self.policy = CEMContinuousPlanner(action_dim=dataset.actions.shape[1],
-                                                constraints=constraints)
-        else:
-            raise NotImplementedError
+        self.logger.info(f"Agent of type {type} initialized.", "SUCCESS")
         
-        self.logger.info(f"Agent of type {type} created.", "SUCCESS")
-
-    
-    def _init_constrains(self, constraints):
+    def _init_constrains(self, dataset, constraints):
         
         min_values = []
         max_values = []
-        for action_key in self.dataset.dataset_config["actions"]:
-            action = self.dataset.dataset_config["actions"][action_key]
+        for action_key in dataset.dataset_config["actions"]:
+            action = dataset.dataset_config["actions"][action_key]
             action_name = action["name"]
 
             if constraints is None:
-                action_min, action_max = self.dataset.df[action_name].min(), self.dataset.df[action_name].max()
+                action_min, action_max = dataset.df[action_name].min(), dataset.df[action_name].max()
             else:
                 action_min, action_max = constraints["min"][action_key], constraints["max"][action_key]
 
@@ -51,50 +50,65 @@ class Agent():
 
         return constraints
 
-    def train(self):
+    def train(self, dataset: BaseDataset, constraints: dict = None):
+        
+        self.type = dataset.action_type
+
         self.logger_training = Logger(f"Agent-Training-{self.hash_id}")
         self.logger_training.info(f"Training agent of type {self.type}", "PROCESS")
-        if self.type == "mpc-discrete" or self.type == "mpc-continuous":
 
-            self.models = []
-            model_1 = RandomForest(n_estimators=100, 
-                                  max_depth=None, 
-                                  n_jobs=-1,
-                                  verbose=0,
-                                  random_state=0)
-            model_1 = NeuralNetwork()
-            self.models.append(model_1)
+        if self.type == "mpc-discrete":
+            self.policy = CEMDiscretePlanner(action_dim=dataset.actions.shape[1])
+        elif self.type == "mpc-continuous":
+            constraints = self._init_constrains(dataset, constraints)
+            self.policy = CEMContinuousPlanner(action_dim=dataset.actions.shape[1],
+                                                constraints=constraints)
+        else:
+            self.logger.error(f"Agent type {self.type} not supported.")
+            raise NotImplementedError
+        
+        self.dataset_config = dataset.dataset_config
+        self.models = []
+        # rf_reg = RandomForest(n_estimators=100, 
+        #                         max_depth=None, 
+        #                         n_jobs=-1,
+        #                         verbose=0,
+        #                         random_state=0)
+        rf_reg = NeuralNetwork()    
+        self.models.append(rf_reg)
 
-            model_2 = RandomForest(n_estimators=100, 
-                                  max_depth=None, 
-                                  n_jobs=-1,
-                                  verbose=0,
-                                  random_state=1)
-            model_2 = NeuralNetwork()
-            self.models.append(model_2)
+        # rf_reg = RandomForest(n_estimators=100, 
+        #                         max_depth=None, 
+        #                         n_jobs=-1,
+        #                         verbose=0,
+        #                         random_state=1)
+        rf_reg = NeuralNetwork()
+        self.models.append(rf_reg)
 
-            n_models = len(self.models)
+        n_models = len(self.models)
 
-            # Split the dataset into n_models
-            len_dataset = len(self.dataset)
-            subset_size = len_dataset // n_models  # integer division
+        # Split the dataset into n_models
+        len_dataset = len(dataset)
+        subset_size = len_dataset // n_models  # integer division
 
-            for i in range(n_models):
-                # Compute start and end indices for this model's subset
-                start_idx = i * subset_size
-                # For the last model, make sure we include all remaining data
-                end_idx = (i + 1) * subset_size if i < n_models - 1 else len_dataset
-                
-                # Create a Subset of the dataset
-                current_subset = Subset(self.dataset, range(start_idx, end_idx))
-                current_subset.dataset_config = self.dataset.dataset_config
-                # Fit the model on this subset
-                self.models[i].fit(current_subset)
+        for i in range(n_models):
+            # Compute start and end indices for this model's subset
+            start_idx = i * subset_size
+            # For the last model, make sure we include all remaining data
+            end_idx = (i + 1) * subset_size if i < n_models - 1 else len_dataset
+            
+            # Create a Subset of the dataset
+            current_subset = Subset(dataset, range(start_idx, end_idx))
+            current_subset.dataset_config = self.dataset_config
+            # Fit the model on this subset
+            self.models[i].fit(current_subset)
 
+        self.status = "Trained"
         self.logger_training.info(f"The agent of type {self.type} has been trained.", "SUCCESS")
 
+
     def objective_function(self, traj):
-        reward_idx = self.dataset.reward_column_idx
+        reward_idx = self.dataset_config['reward_vector_idx']
         return -sum(traj[:, reward_idx])       
 
     def predict(self, 
@@ -139,6 +153,96 @@ class Agent():
                 return np.array(transformed_actions)[: ,0].T
             
             return actions
-        else:
-            self.logger_inference.error(f"Agent of type {self.type} not implemented.", "ERROR")
-            raise NotImplementedError
+
+    def save(self, path = 'agents/'):
+        """Save the agent configuration and models."""
+        validate_path(path)
+        if self.status != "Trained":
+            self.logger.error("Agent must be trained before saving.")
+            raise Exception("Agent must be trained before saving.")
+        
+        # Check if the directory exists
+        agent_path = f"{path}/{self.name}"
+        if not os.path.exists(agent_path):
+            os.makedirs(agent_path)
+            os.makedirs(f"{agent_path}/models")
+
+        # Save agent configuration
+        config = {
+            'name': self.name,
+            'type': self.type,
+            'status': self.status,            
+            'version': '0.1',
+            'created_at': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            'dataset_config': serialize_processors(self.dataset_config.copy(), agent_path)
+        }
+        
+        with open(f"{agent_path}/agent_config.json", "w") as f:
+            json.dump(config, f, indent=4, cls=NumpyEncoder)
+
+        # Save policy if exists
+        if hasattr(self, 'policy'):
+            with open(f"{agent_path}/policy_config.json", "w") as f:
+                policy_config = {
+                    'type': self.policy.__class__.__name__,
+                    'params': serialize_policy_dict(self.policy.__dict__)
+                }
+                json.dump(policy_config, f, indent=4, cls=NumpyEncoder)
+
+        # Save models if they exist
+        if hasattr(self, 'models') and self.models:
+            for i, model in enumerate(self.models):
+                model.save(f"{agent_path}/models/model_{i}.joblib")
+
+    @classmethod 
+    def load(cls, path: str):
+        """Load an agent from saved configuration."""
+
+        validate_agent_directory(path)
+
+        with open(f"{path}/agent_config.json", "r") as f:
+            config = json.load(f)
+
+        # Create agent instance
+        agent = cls(
+            name=config['name']
+        )
+        agent.status = config['status']
+        # Restore dataset configuration with deserialized processors
+        agent.dataset_config = deserialize_processors(config['dataset_config'], path)
+
+        # Load policy if exists
+        if os.path.exists(f"{path}/policy_config.json"):
+            with open(f"{path}/policy_config.json", "r") as f:
+                policy_config = json.load(f)
+                # Reconstruct policy based on type
+                if policy_config['type'] == "CEMDiscretePlanner":
+                    agent.policy = CEMDiscretePlanner(action_dim=policy_config['params']['action_dim'])
+                    agent.type = "mpc-discrete"
+                elif policy_config['type'] == "CEMContinuousPlanner":
+                    agent.policy = CEMContinuousPlanner(action_dim=policy_config, constraints=policy_config['params']['constraints'])
+                    agent.type = "mpc-continuous"
+                # Restore policy parameters
+                for key, value in deserialize_policy_dict(policy_config['params']).items():
+                    setattr(agent.policy, key, value)
+
+        # Load models if they exist
+        model_files = glob.glob(f"{path}/models/model_*.joblib")
+        if model_files:
+            agent.models = []
+            for model_path in sorted(model_files):
+                model = NeuralNetwork.load(model_path) 
+                agent.models.append(model)
+
+        return agent
+    
+
+    def _validate_models(self):
+        """Validate that all required models are loaded correctly."""
+        if not self.models:
+            self.logger.error("No models found in agent")
+            raise ValueError("No models found in agent")
+        for model in self.models:
+            if not isinstance(model, (RandomForest, SupportVectorMachine, NeuralNetwork)):
+                self.logger.error(f"Invalid model type: {type(model)}")
+                raise TypeError(f"Invalid model type: {type(model)}")

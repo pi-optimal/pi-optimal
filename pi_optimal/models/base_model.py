@@ -2,6 +2,7 @@ import numpy as np
 from tqdm.auto import tqdm
 import pickle
 from torch.utils.data import DataLoader
+import joblib
 
 class BaseModel:
     
@@ -51,19 +52,20 @@ class BaseModel:
         
     def save(self, filepath):
         with open(filepath, "wb") as f:
-            pickle.dump(
+            joblib.dump(
                 {
                     "models": self.models,
                     "dataset_config": self.dataset_config,
                     "params": self.params,
                 },
                 f,
+                compress=3
             )
 
     @classmethod
     def load(cls, filepath):
         with open(filepath, "rb") as f:
-            data = pickle.load(f)
+            data = joblib.load(f)
 
         instance = cls(**data["params"])
         instance.models = data["models"]
@@ -116,4 +118,3 @@ class BaseModel:
                 next_state = y
                 next_state_wo_reward = np.delete(next_state, reward_idx, axis=1)
                 model.fit(next_state_wo_reward, target_reward)
-            

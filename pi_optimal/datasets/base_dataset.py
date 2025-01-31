@@ -47,6 +47,7 @@ class BaseDataset(Dataset):
 
         self._validate_input()
         self._setup_dataset()
+        self._infer_action_type()
 
     def _create_dataset_config(
         self,
@@ -216,6 +217,17 @@ class BaseDataset(Dataset):
         self.df = self.df.sort_values(by=[self.episode_column, self.timestep_column])
         self.df = self.df.reset_index(drop=True)
         self.num_episodes = len(self.df[self.episode_column].unique())
+
+    def _infer_action_type(self):
+        """Infer the type of actions and assign it to dataset.action_type."""
+        action_types = {action["type"] for action in self.dataset_config["actions"].values()}
+        if all(action_type == "numerical" for action_type in action_types):
+            self.action_type = "mpc-continuous"
+        elif all(action_type in {"categorial", "binary"} for action_type in action_types):
+            self.action_type = "mpc-discrete"
+        else:
+            # If there are mixed action types, default to continuous
+            self.action_type = "mpc-continuous"
 
     def __len__(self) -> int:
         """Return the number of rows in the dataset.
