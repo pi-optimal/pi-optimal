@@ -2,9 +2,20 @@
 name = "pi-optimal"
 version = "0.1.0"
 description = "Python package for easy, data-efficient RL-based decision-making in business applications."
-authors = ["pi-optimal UG (haftungsbeschränkt) <hello@pi-optimal.com>"]
+authors = [{ name = "pi-optimal UG (haftungsbeschränkt)", email = "hello@pi-optimal.com" }]
 readme = "README.md"
+license = { text = "AGPL-3.0-or-later" }
+keywords = [ "rl", "decision intelligence", "reinforcement learning", "decision-making", "pi", "optimal" ]
 
+
+[project.urls]
+homepage = "https://pi-optimal.com/"
+repository = "https://github.com/pi-optimal/pi-optimal"
+documentation = "https://pi-optimal.com/docs/getting-started"
+
+maintainers = [
+    { name = "Jochen Luithardt", email = "jol@pi-optimal.com>" },
+]
 
 [tool.poetry.dependencies]
 python = "^3.10"
