@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
 from .base_planner import BasePlanner
 import numpy as np
+from pi_optimal.utils.logger import Logger
 
 class CEMPlanner(BasePlanner):
-    def __init__(self, action_dim):
+    def __init__(self, action_dim, logger=None):
 
         self.action_dim = action_dim
 
@@ -11,6 +12,12 @@ class CEMPlanner(BasePlanner):
         self.mu = None  # To be defined in subclasses
         self.sigma = None  # To be defined in subclasses
         self.current_iter = 0
+
+        if logger is not None:
+            self.logger = logger
+        else:
+            self.hash_id = np.random.randint(0, 100000)
+            self.logger = Logger(f"CEM-Planner-{self.hash_id}")
 
     @abstractmethod
     def generate_actions(self):
@@ -65,7 +72,7 @@ class CEMPlanner(BasePlanner):
             topk_cost = costs[np.argsort(costs)[:topk]].mean()
             topk_cost_contribution = cost_contribution[np.argsort(costs)[:topk]].mean()
             topk_uncertainty_contribution = uncertainty_contribution[np.argsort(costs)[:topk]].mean()
-            print(f"Iteration: {i+1}, Top-{topk} Cost: {round(topk_cost, 4)} (Cost: {round(topk_cost_contribution, 4)}, Uncertainty: {round(topk_uncertainty_contribution, 4)})")
+            self.logger.info(f"Iteration: {i+1}, Top-{topk} Cost: {round(topk_cost, 4)} (Cost: {round(topk_cost_contribution, 4)}, Uncertainty: {round(topk_uncertainty_contribution, 4)})", indent_level=1)
 
             if not allow_sigma:
                 self.sigma = np.ones_like(self.sigma)

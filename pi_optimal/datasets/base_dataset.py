@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from torch.utils.data import Dataset
 from typing import Dict, Any, List, Optional
-import logging
+from pi_optimal.utils.logger import Logger
 
 class BaseDataset(Dataset):
     """Base class for all datasets.
@@ -31,10 +31,14 @@ class BaseDataset(Dataset):
         Raises:
             AssertionError: If any of the input validations fail.
         """
+        self.hash_id = np.random.randint(0, 100000)
+        self.logger = Logger(f"Dataset-{self.hash_id}")
+        self.logger.info("Initializing new dataset...", "PROCESS")
         self.df = df.copy()
         self.dataset_config = dataset_config
         self.unit_index = unit_index
         self.timestep_column = timestep_column
+
 
         if dataset_config is None:
             self.dataset_config = self._create_dataset_config(
@@ -148,30 +152,39 @@ class BaseDataset(Dataset):
 
         # Check if dataframe is empty
         if self.df.empty:
+            self.logger.error("Input dataframe must not be empty.")
             raise ValueError("Input dataframe must not be empty.")
 
         # Check if episode and timestep columns exist
         if episode_col not in self.df.columns:
+            self.logger.error(f"Episode column '{episode_col}' not found in dataframe.")
             raise ValueError(f"Episode column '{episode_col}' not found in dataframe.")
         if timestep_col not in self.df.columns:
+            self.logger.error(f"Timestep column '{timestep_col}' not found in dataframe.")
             raise ValueError(f"Timestep column '{timestep_col}' not found in dataframe.")
 
         # Ensure episode column is of integer type
         if not pd.api.types.is_integer_dtype(self.df[episode_col]):
             try:
+                self.logger.warning(f"Episode column '{episode_col}' is not of integer type.")
                 self.df[episode_col] = self.df[episode_col].astype(int)
-                logging.warning(f"Converted episode column '{episode_col}' to integer type.")
+                self.logger.info(f"Converted episode column '{episode_col}' to integer type.")
             except ValueError:
+                self.logger.error(f"Episode column '{episode_col}' must be of integer type.")
                 raise ValueError(f"Episode column '{episode_col}' must be of integer type.")
 
         # Adjust episode numbers to start from 0 and be continuous
         unique_episodes = np.sort(self.df[episode_col].unique())
         expected_episodes = np.arange(unique_episodes.min(), unique_episodes.max() + 1)
         if not np.array_equal(unique_episodes, expected_episodes):
-            logging.warning("Episodes are not continuous starting from the minimum episode number.")
+            self.logger.warning("Episodes are not continuous starting from the minimum episode number.")
             episode_mapping = {old: new for new, old in enumerate(unique_episodes)}
             self.df[episode_col] = self.df[episode_col].map(episode_mapping)
-            logging.warning("Adjusted episode numbering to start from 0 and be continuous.")
+            self.logger.info("Adjusted episode numbering to start from 0 and be continuous.")
+
+        # If timestep column is of datetime type, convert to integer indices starting from 0
+        if pd.api.types.is_datetime64_any_dtype(self.df[timestep_col]):
+            self.logger.warning(f"Timestep column '{timestep_col}' is of datetime type. Converting to integer indices.")
 
         # Check and adjust timestep column within each episode
         def process_timesteps(group):
@@ -180,63 +193,22 @@ class BaseDataset(Dataset):
                 # Convert datetime timesteps to integer indices starting from 0
                 group = group.sort_values(by=timestep_col)
                 group[timestep_col] = np.arange(len(group))
-                logging.warning(f"Converted datetime timesteps to integer indices in episode {group[episode_col].iloc[0]}.")
             elif pd.api.types.is_integer_dtype(timesteps):
                 # Ensure timesteps start from 0 and increment by 1
                 expected_timesteps = np.arange(len(group))
                 if not np.array_equal(timesteps.values, expected_timesteps):
-                    raise ValueError(
-                        f"Timesteps in episode {group[episode_col].iloc[0]} must start from 0 and increment by 1."
+                    self.logger.warning(
+                        f"Timesteps in episode {group[episode_col].iloc[0]} do not start from 0 and increment by 1. Adjusting timesteps."
+                    )
+                    group[timestep_col] = expected_timesteps
+                    self.logger.info(
+                        f"Adjusted timesteps in episode {group[episode_col].iloc[0]} to start from 0 and increment by 1."
                     )
             else:
                 raise ValueError(f"Timestep column '{timestep_col}' must be of integer or datetime type.")
             return group
 
         self.df = self.df.groupby(episode_col, group_keys=False).apply(process_timesteps)
-
-    def _validate_input(self):
-        """Validate the input dataframe and configuration.
-
-        Raises:
-            AssertionError: If any of the validations fail.
-        """
-
-        # Let episode start from 0
-        if self.df[self.dataset_config["episode_column"]].min() != 0:
-            logging.warning("Episode column does not start from 0")
-            self.df[self.dataset_config["episode_column"]] = self.df[self.dataset_config["episode_column"]] - self.df[self.dataset_config["episode_column"]].min()
-
-        # Replace datetime timesteps with continuous integers
-        if self.df[self.dataset_config["timestep_column"]].dtype == 'datetime64[ns]':
-            logging.warning("Converting datetime timesteps to continuous integers")
-            if self.df.groupby(by=self.dataset_config["episode_column"])[self.dataset_config["timestep_column"]].apply(lambda x: (x - x.shift(1)).iloc[1:].mean()).std().seconds != 0:
-                logging.warning("Timesteps between observation don't have a constant duration")
-            
-            self.df.loc[:, "_" + self.dataset_config["timestep_column"]] = self.df[self.dataset_config["timestep_column"]].copy()
-            self.df = self.df.drop(columns=self.dataset_config["timestep_column"])
-            self.df[self.dataset_config["timestep_column"]] = self.df.groupby(self.dataset_config["episode_column"]).cumcount()
-
-
-        # Validation for timestep continuity within episodes
-        episode_groups = self.df.groupby(self.dataset_config["episode_column"])
-        for _, group in episode_groups:
-            timesteps = group[self.dataset_config["timestep_column"]].values
-            assert (timesteps == range(len(timesteps))).all(), (
-                f"Timesteps in episode {group[self.dataset_config['episode_column']].iloc[0]} "
-                f"must start from 0 and increment by 1"
-            )
-
-        assert len(self.df) > 0, "Input dataframe must not be empty"
-        assert (
-            self.df[self.dataset_config["episode_column"]].dtype == int
-        ), "Episode column must be of type int"
-        assert (
-            self.df[self.dataset_config["episode_column"]].max()
-            == self.df[self.dataset_config["episode_column"]].nunique() - 1
-        ), "Number of episodes must be equal to the maximum episode number"
-        assert (
-            self.df[self.dataset_config["timestep_column"]].dtype == int or self.df[self.dataset_config["timestep_column"]].dtype == 'datetime64[ns]'
-        ), "Timestep column must be of type int"
 
     def _setup_dataset(self):
         """Set up the dataset by sorting and resetting the index."""

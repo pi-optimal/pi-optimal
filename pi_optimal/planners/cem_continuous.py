@@ -1,5 +1,5 @@
 import numpy as np
-from tqdm import tqdm
+from tqdm.auto import tqdm
 from .cem_planner import CEMPlanner
 
 class CEMContinuousPlanner(CEMPlanner):
@@ -28,7 +28,7 @@ class CEMContinuousPlanner(CEMPlanner):
         num_models = len(models)
         model_predictions = [[] for _ in range(num_models)]
 
-        for t in tqdm(range(self.horizon)):
+        for t in tqdm(range(self.horizon), desc="Simulating trajectories"):
             current_actions = actions[:, t, :]  # Shape: (population_size, action_dim)
 
             action_history = np.roll(action_history, shift=-1, axis=1)

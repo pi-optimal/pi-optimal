@@ -67,23 +67,33 @@ class TimeseriesDataset(BaseDataset):
 
         self.reward_column = reward_column
 
+        self.logger.info(f"Dataset has {len(self.df)} rows and {len(self.df.columns)} columns.", "INFO", indent_level=1)
+        self.logger.info(f"Dataset has {self.df[self.dataset_config['episode_column']].nunique()} episodes.", "INFO", indent_level=1)
+        self.logger.info(f"Dataset has {len(self.dataset_config['states'])} state features and {len(self.dataset_config['actions'])} actions.", "INFO", indent_level=1)
+
         self._calculate_episode_boundaries()
         self._calculate_timestep_boundaries()
 
         self.train_processors = train_processors
         if self.train_processors:
+            self.logger.info("Fitting feature processors...", "PROCESS", indent_level=1)
             self._setup_processors()
-            
+            self.logger.info("Processors created and fitted", "CHECK", indent_level=2)
+        else:
+            self.logger.info("Using processors provided in the dataset_configuration.", "INFO", indent_level=1)
+
+        self.logger.info("Transforming features...", "PROCESS", indent_level=1)    
         self.states = self.transform_features("states", train_processors)
         self.actions = self.transform_features("actions", train_processors)
 
         self.num_episodes = len(self.episode_start_index)
-        
+
         self.min_episode_length = np.min(np.diff(np.r_[0, self.episode_end_index]))
         self.max_episode_length = np.max(np.diff(np.r_[0, self.episode_end_index]))
         self.median_episode_length = np.median(
             np.diff(np.r_[0, self.episode_end_index])
         )
+        self.logger.info("Dataset was created successfully!", "SUCCESS", indent_level=0)  
 
     def get_episode(
         self, episode_id: int
@@ -225,6 +235,24 @@ class TimeseriesDataset(BaseDataset):
 
 
             transformed_features.append(transformed)
+
+            if feature["processor"] is not None:
+                if hasattr(feature["processor"], "n_components"):
+                    processor_information = f"with {feature['processor'].n_components} components"
+                elif hasattr(feature["processor"], "n_clusters"):
+                    processor_information = f"with {feature['processor'].n_clusters} clusters"
+                elif hasattr(feature["processor"], "mean_") and hasattr(feature["processor"], "var_"):
+                    processor_information = f"with mean {round(feature['processor'].mean_[0], 2)} and std {round(feature['processor'].var_[0] **(1/2), 2)}"
+                elif hasattr(feature["processor"], "_categories"):
+                    processor_information = f"with categories {feature['processor'].categories_}"
+                else:
+                    processor_information = ""
+
+            self.logger.info(
+                f"Transformed {feature_type} feature '{feature['name']}' using preprocessor '{feature['processor']} {processor_information}'.",
+                "CHECK",
+                indent_level=2,
+            )
 
         return np.hstack(transformed_features)
 
