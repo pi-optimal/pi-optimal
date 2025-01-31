@@ -57,20 +57,21 @@ class Agent():
         if self.type == "mpc-discrete" or self.type == "mpc-continuous":
 
             self.models = []
-            rf_reg = RandomForest(n_estimators=100, 
+            model_1 = RandomForest(n_estimators=100, 
                                   max_depth=None, 
                                   n_jobs=-1,
                                   verbose=0,
                                   random_state=0)
-        
-            self.models.append(rf_reg)
+            model_1 = NeuralNetwork()
+            self.models.append(model_1)
 
-            rf_reg = RandomForest(n_estimators=100, 
+            model_2 = RandomForest(n_estimators=100, 
                                   max_depth=None, 
                                   n_jobs=-1,
                                   verbose=0,
                                   random_state=1)
-            self.models.append(rf_reg)
+            model_2 = NeuralNetwork()
+            self.models.append(model_2)
 
             n_models = len(self.models)
 
