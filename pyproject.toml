@@ -3,17 +3,16 @@ name = "pi-optimal"
 version = "0.1.0"
 description = "Python package for easy, data-efficient RL-based decision-making in business applications."
 authors = ["pi-optimal UG (haftungsbeschränkt) <hello@pi-optimal.com>"]
+maintainers = ["Jochen Luithardt <jol@pi-optimal.com>"]  # Move maintainers here
 readme = "README.md"
 license = "AGPL-3.0-or-later"
-keywords = [ "rl", "decision intelligence", "reinforcement learning", "decision-making", "pi", "optimal"]
+keywords = ["rl", "decision intelligence", "reinforcement learning", "decision-making", "pi", "optimal"]
 
-
-[project.urls]
+# Move repository info inside [tool.poetry]
+[tool.poetry.urls]
 homepage = "https://pi-optimal.com/"
 repository = "https://github.com/pi-optimal/pi-optimal"
 documentation = "https://pi-optimal.com/docs/getting-started"
-
-maintainers = ["Jochen Luithardt <jol@pi-optimal.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -32,7 +31,6 @@ plotly = "^5.24.1"
 nbformat = "^5.10.4"
 ipykernel = "^6.29.5"
 
-
 [tool.poetry.group.dev.dependencies]
 black = "^24.4.2"
 pytest = "^8.3.2"
@@ -41,20 +39,18 @@ wandb = "^0.17.5"
 pandas-stubs = "^2.2.2.240603"
 types-tqdm = "^4.66.0.20240417"
 
-
 [tool.poetry.group.doc.dependencies]
 sphinx = "^7.3.0"
 sphinx-autobuild = "^2024.4.16"
 sphinxawesome-theme = "^5.2.0"
 
 [[tool.poetry.source]]
-    name     = "pytorch-cpu"
-    priority = "explicit"
-    url      = "https://download.pytorch.org/whl/cpu"
+name     = "pytorch-cpu"
+priority = "explicit"
+url      = "https://download.pytorch.org/whl/cpu"
 
 [tool.poetry.extras]
 notebook = ["jupyter", "ipykernel"]
-
 
 [build-system]
 requires = ["poetry-core"]
