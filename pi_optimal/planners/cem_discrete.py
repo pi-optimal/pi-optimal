@@ -1,5 +1,5 @@
 import numpy as np
-from tqdm import tqdm
+from tqdm.auto import tqdm
 from .cem_planner import CEMPlanner
 
 class CEMDiscretePlanner(CEMPlanner):
@@ -27,7 +27,7 @@ class CEMDiscretePlanner(CEMPlanner):
         num_models = len(models)
         model_predictions = [[] for _ in range(num_models)]
 
-        for t in tqdm(range(self.horizon)):
+        for t in tqdm(range(self.horizon), desc="Simulating trajectories"):
             current_actions = actions[:, t]
             current_actions_one_hot = np.zeros((self.population_size, self.action_dim))
             current_actions_one_hot[np.arange(self.population_size), current_actions] = 1

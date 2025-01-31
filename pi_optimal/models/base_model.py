@@ -1,5 +1,5 @@
 import numpy as np
-from tqdm import tqdm
+from tqdm.auto import tqdm
 import pickle
 from torch.utils.data import DataLoader
 
@@ -106,7 +106,7 @@ class BaseModel:
         ]
 
         # Fit all models except the reward model
-        for i, model in enumerate(tqdm(self.models)):
+        for i, model in enumerate(tqdm(self.models, desc="Training models...")):
             if i != self.dataset_config["reward_feature_idx"]:
                 y_target = self._get_target_for_feature(y, i)
                 model.fit(X, y_target)

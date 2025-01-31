@@ -3,6 +3,7 @@ import logging
 from datetime import datetime
 from typing import Optional, Dict, Set
 import sys
+from tqdm.auto import tqdm
 
 class Logger:
     """
@@ -106,22 +107,44 @@ class Logger:
             self._display_func = self._terminal_display
 
     def _setup_terminal_logger(self):
-        """Setup traditional logging for terminal environment."""
+        """Setup traditional logging for terminal environment using tqdm.write."""
         self.logger = logging.getLogger(self.name)
         self.logger.setLevel(self.level)
         
         # Clear existing handlers to prevent duplicate logs
         self.logger.handlers.clear()
         
-        # Create console handler
-        console_handler = logging.StreamHandler(sys.stdout)
+        # Create a custom handler that uses tqdm.write
+        handler = TqdmLoggingHandler()
         formatter = logging.Formatter(
             '%(asctime)s | %(name)s | %(levelname)s | %(message)s',
             datefmt='%Y-%m-%d %H:%M:%S'
         )
-        console_handler.setFormatter(formatter)
-        self.logger.addHandler(console_handler)
+        handler.setFormatter(formatter)
+        self.logger.addHandler(handler)
         self.logger.propagate = False
+
+    def _terminal_display(self, level: str, msg: str, emoji_key: Optional[str] = None, indent_level: int = 0):
+        """Display log message in terminal using tqdm.write with indentation."""
+        from tqdm import tqdm  # Import here to avoid issues if tqdm is not installed
+
+        emoji = self.EMOJI_MAP.get(emoji_key, '') if emoji_key else ''
+        formatted_msg = f"{emoji} {msg}" if emoji else msg
+        indent_spaces = ' ' * (4 * indent_level)  # 4 spaces per indent level
+        formatted_msg = f"{indent_spaces}{formatted_msg}"
+        
+        # Use the appropriate logging method
+        if level == 'DEBUG':
+            self.logger.debug(formatted_msg)
+        elif level == 'INFO':
+            self.logger.info(formatted_msg)
+        elif level == 'WARNING':
+            self.logger.warning(formatted_msg)
+        elif level == 'ERROR':
+            self.logger.error(formatted_msg)
+        elif level == 'CRITICAL':
+            self.logger.critical(formatted_msg)
+
 
     def _initialize_display_area(self):
         """Create a display area for grouped logs in the notebook."""
@@ -146,11 +169,9 @@ class Logger:
                 max-height: 600px;
                 overflow-y: auto;
                 font-family: 'Segoe UI Emoji', 'Segoe UI Symbol', monospace;
-                padding: 15px;
-                background-color: #f8f9fa;
-                border: 1px solid #dee2e6;
-                border-radius: 5px;
-                font-size: 1.0em; /* Increased font size */
+                padding: 5px;
+                background-color: #ffffff;
+                font-size: 0.9em; /* Increased font size */
                 position: relative;
             }
 
@@ -158,11 +179,9 @@ class Logger:
             .logger-entry {
                 display: flex;
                 align-items: center;
-                padding: 10px 15px;
-                margin-bottom: 8px;
+                padding: 1px 5px;
+                margin-bottom: 4px;
                 background-color: #ffffff;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-                border-radius: 4px;
                 transition: background-color 0.2s, box-shadow 0.2s;
                 white-space: pre-wrap; /* Preserve whitespace for symbols */
                 position: relative;
@@ -173,26 +192,7 @@ class Logger:
                 box-shadow: 0 2px 6px rgba(0,0,0,0.1);
             }
 
-            /* Vertical Line Connector */
-            .logger-entry::before {
-                content: '';
-                position: absolute;
-                left: -20px; /* Adjust based on INDENT_STEP */
-                top: 0;
-                bottom: 0;
-                width: 1px;
-                background-color: #6c757d; /* Gray color for connectors */
-                display: none; /* Hidden for top-level entries */
-            }
-
-            /* Display connector for indented entries */
-            .logger-entry[data-indent="1"]::before,
-            .logger-entry[data-indent="2"]::before,
-            .logger-entry[data-indent="3"]::before,
-            .logger-entry[data-indent="4"]::before,
-            .logger-entry[data-indent="5"]::before {
-                display: block;
-            }
+        
 
             /* Connector Line styling based on indent */
             .logger-entry[data-indent="1"]::before {
@@ -249,24 +249,6 @@ class Logger:
         if self.display_handle:
             self.display_handle.update(HTML(f"<div id='logger-container'>{html_logs}</div>"))
 
-    def _terminal_display(self, level: str, msg: str, emoji_key: Optional[str] = None, indent_level: int = 0):
-        """Display log message in terminal with indentation."""
-        emoji = self.EMOJI_MAP.get(emoji_key, '') if emoji_key else ''
-        formatted_msg = f"{emoji} {msg}" if emoji else msg
-        indent_spaces = ' ' * (4 * indent_level)  # 4 spaces per indent level
-        formatted_msg = f"{indent_spaces}{formatted_msg}"
-        
-        if level == 'DEBUG':
-            self.logger.debug(formatted_msg)
-        elif level == 'INFO':
-            self.logger.info(formatted_msg)
-        elif level == 'WARNING':
-            self.logger.warning(formatted_msg)
-        elif level == 'ERROR':
-            self.logger.error(formatted_msg)
-        elif level == 'CRITICAL':
-            self.logger.critical(formatted_msg)
-
     def debug(self, msg: str, emoji_key: Optional[str] = 'DEBUG', indent_level: int = 0):
         """
         Log a debug message.
@@ -321,3 +303,18 @@ class Logger:
             indent_level: The indentation level for the message.
         """
         self._display_func('CRITICAL', msg, emoji_key, indent_level)
+
+
+class TqdmLoggingHandler(logging.Handler):
+    """Custom logging handler that uses tqdm.write to prevent progress bar disruption."""
+    def __init__(self, level=logging.NOTSET):
+        super().__init__(level)
+    
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            from tqdm import tqdm
+            tqdm.write(msg)
+            self.flush()
+        except Exception:
+            self.handleError(record)

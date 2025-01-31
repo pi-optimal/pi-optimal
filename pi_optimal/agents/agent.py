@@ -109,7 +109,8 @@ class Agent():
                 allow_sigma: bool = False):
         self.logger_inference = Logger(f"Agent-Inference-{self.hash_id}")
         self.logger_inference.info(f"Searching for the optimal action sequence over a horizon of {horizon} steps.", "PROCESS")
-
+        self.policy.logger = self.logger_inference
+        
         if self.type == "mpc-discrete" or self.type == "mpc-continuous":
             last_state, last_action, _, _ = dataset[len(dataset) - 1]
 
