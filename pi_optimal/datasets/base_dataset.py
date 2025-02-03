@@ -111,8 +111,9 @@ class BaseDataset(Dataset):
                 "evaluation_metric": eval_metric,
             }
 
-        # Add lookback timesteps
+        # Add lookback timesteps and reward column
         dataset_config["lookback_timesteps"] = lookback_timesteps
+        dataset_config['reward_column'] = reward_column
 
         return dataset_config
 
