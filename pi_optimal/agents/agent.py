@@ -85,7 +85,7 @@ class Agent():
             ]
 
         self._validate_models(model_config)
-        
+
         self.models = []
         for config in model_config:
             model_cls = self.MODEL_REGISTRY[config["model_type"]]
@@ -199,7 +199,7 @@ class Agent():
         # Save models if they exist
         if hasattr(self, 'models') and self.models:
             for i, model in enumerate(self.models):
-                model.save(f"{agent_path}/models/model_{i}.joblib")
+                model.save(f"{agent_path}/models/model_{i}.pkl")
 
     @classmethod 
     def load(cls, path: str):
@@ -234,7 +234,7 @@ class Agent():
                     setattr(agent.policy, key, value)
 
         # Load models if they exist
-        model_files = glob.glob(f"{path}/models/model_*.joblib")
+        model_files = glob.glob(f"{path}/models/model_*.pkl")
         if model_files:
             agent.models = []
             for model_path in sorted(model_files):
