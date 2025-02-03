@@ -21,7 +21,7 @@ class BaseDataset(Dataset):
         num_episodes (int): The number of episodes in the dataset.
     """
 
-    def __init__(self, df: pd.DataFrame, dataset_config: Dict[str, Any] = None, unit_index: str = None, timestep_column: str = None, reward_column: str = None, state_columns: List[str] = None, action_columns: List[str] = None):
+    def __init__(self, df: pd.DataFrame, dataset_config: Dict[str, Any] = None, unit_index: str = None, timestep_column: str = None, reward_column: str = None, state_columns: List[str] = None, action_columns: List[str] = None, lookback_timesteps: int = None):
         """Initialize the BaseDataset.
 
         Args:
@@ -42,7 +42,7 @@ class BaseDataset(Dataset):
 
         if dataset_config is None:
             self.dataset_config = self._create_dataset_config(
-                df, unit_index, timestep_column, reward_column, state_columns, action_columns
+                df, unit_index, timestep_column, reward_column, state_columns, action_columns, lookback_timesteps
             )
 
         self._validate_input()
@@ -57,6 +57,7 @@ class BaseDataset(Dataset):
         reward_column: str,
         state_columns: List[str],
         action_columns: List[str],
+        lookback_timesteps: int,
     ) -> Dict[str, Any]:
         """Create a dataset configuration dictionary.
 
@@ -109,6 +110,9 @@ class BaseDataset(Dataset):
                 "processor": processor,
                 "evaluation_metric": eval_metric,
             }
+
+        # Add lookback timesteps
+        dataset_config["lookback_timesteps"] = lookback_timesteps
 
         return dataset_config
 
