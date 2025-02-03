@@ -174,6 +174,18 @@ class Agent():
             os.makedirs(agent_path)
             os.makedirs(f"{agent_path}/models")
 
+        # Save models first and gather their configs (type and file name)
+        models_config = []
+        if hasattr(self, 'models') and self.models:
+            for i, model in enumerate(self.models):
+                model_filename = f"model_{i}.pkl"
+                model_path = f"{agent_path}/models/{model_filename}"
+                model.save(model_path)
+                models_config.append({
+                    "model_type": model.__class__.__name__,
+                    "model_filename": model_filename
+                })
+        
         # Save agent configuration
         config = {
             'name': self.name,
@@ -181,7 +193,8 @@ class Agent():
             'status': self.status,            
             'version': '0.1',
             'created_at': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            'dataset_config': serialize_processors(self.dataset_config.copy(), agent_path)
+            'dataset_config': serialize_processors(self.dataset_config.copy(), agent_path),
+            'models_config': models_config
         }
         
         with open(f"{agent_path}/agent_config.json", "w") as f:
@@ -233,13 +246,18 @@ class Agent():
                 for key, value in deserialize_policy_dict(policy_config['params']).items():
                     setattr(agent.policy, key, value)
 
-        # Load models if they exist
-        model_files = glob.glob(f"{path}/models/model_*.pkl")
-        if model_files:
-            agent.models = []
-            for model_path in sorted(model_files):
-                model = NeuralNetwork.load(model_path) 
-                agent.models.append(model)
+        # Load models using the saved models_config list
+        agent.models = []
+        models_config = config.get('models_config', [])
+        for model_entry in models_config:
+            model_type = model_entry['model_type']
+            model_filename = model_entry['model_filename']
+            model_path = f"{path}/models/{model_filename}"
+            if model_type not in cls.MODEL_REGISTRY:
+                raise ValueError(f"Unknown model type '{model_type}' found in saved configuration.")
+            model_cls = cls.MODEL_REGISTRY[model_type]
+            model = model_cls.load(model_path)
+            agent.models.append(model)
 
         return agent
     
