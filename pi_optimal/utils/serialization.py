@@ -48,16 +48,23 @@ def deserialize_processors(config: dict, base_path: str) -> dict:
         all_processors = {}
 
     def _process_dict(d):
-        processed = {}
-        for key, value in d.items():
-            if isinstance(value, dict):
-                if key == 'processor' and 'key' in value:
-                    processed[key] = all_processors.get(value['key'], None)
+            processed = {}
+            for key, value in d.items():
+                # Convert numeric keys back to integers
+                if isinstance(key, str) and key.isdigit():
+                    new_key = int(key)
                 else:
-                    processed[key] = _process_dict(value)
-            else:
-                processed[key] = value
-        return processed
+                    new_key = key
+
+                if isinstance(value, dict):
+                    # Handle processor reconstruction
+                    if new_key == 'processor' and 'key' in value:
+                        processed[new_key] = all_processors.get(value['key'])
+                    else:
+                        processed[new_key] = _process_dict(value)
+                else:
+                    processed[new_key] = value
+            return processed
 
     return _process_dict(config)
 
