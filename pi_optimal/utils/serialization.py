@@ -6,7 +6,14 @@ import os
 import datetime
 
 def serialize_processors(config: dict, path: str) -> dict:
-    """Improved processor serialization using pickle and path safety"""
+    """
+    Converts processor objects to their string representation and saves them.
+    Args:
+        config (dict): The configuration dictionary containing processor objects.
+        path (str): The directory path where processors will be saved.
+    Returns:
+        dict: The configuration dictionary with processor paths.
+    """
     serialized_config = {}
     processors_dict = {}
     
@@ -39,7 +46,14 @@ def serialize_processors(config: dict, path: str) -> dict:
     return serialized_config
 
 def deserialize_processors(config: dict, base_path: str) -> dict:
-    """Improved processor deserialization with error handling"""
+    """
+    Reconstructs processor objects from their string representation.
+    Args:
+        config (dict): The configuration dictionary with processor paths.
+        base_path (str): The base directory path where processors are saved.
+    Returns:
+        dict: The configuration dictionary with processor objects.
+    """
     try:
         processors_path = os.path.join(base_path, config.pop('_processors_path'))
         with open(processors_path, 'rb') as f:
@@ -69,7 +83,13 @@ def deserialize_processors(config: dict, base_path: str) -> dict:
     return _process_dict(config)
 
 def serialize_policy_dict(policy_dict: Dict[str, Any]) -> Dict[str, Any]:
-    """Enhanced policy serialization with logger exclusion and numpy support"""
+    """
+    Serializes policy dictionary, excluding loggers and supporting numpy arrays.
+    Args:
+        policy_dict (Dict[str, Any]): The policy dictionary to serialize.
+    Returns:
+        Dict[str, Any]: The serialized policy dictionary.
+    """
     serialized_dict = {}
     for key, value in policy_dict.items():
         if key == 'logger':
@@ -89,7 +109,13 @@ def serialize_policy_dict(policy_dict: Dict[str, Any]) -> Dict[str, Any]:
     return serialized_dict
 
 def deserialize_policy_dict(policy_dict: Dict[str, Any]) -> Dict[str, Any]:
-    """Enhanced policy deserialization with array restoration"""
+    """
+    Deserializes policy dictionary, restoring numpy arrays.
+    Args:
+        policy_dict (Dict[str, Any]): The serialized policy dictionary.
+    Returns:
+        Dict[str, Any]: The deserialized policy dictionary.
+    """
     deserialized_dict = {}
     for key, value in policy_dict.items():
         if isinstance(value, dict):
@@ -104,7 +130,9 @@ def deserialize_policy_dict(policy_dict: Dict[str, Any]) -> Dict[str, Any]:
     return deserialized_dict
 
 class NumpyEncoder(json.JSONEncoder):
-    """Extended numpy support with datetime handling"""
+    """
+    JSON encoder with extended support for numpy and datetime objects.
+    """
     def default(self, obj):
         if isinstance(obj, np.generic):
             return obj.item()
