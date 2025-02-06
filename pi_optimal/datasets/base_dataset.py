@@ -110,6 +110,9 @@ class BaseDataset(Dataset):
                 "evaluation_metric": eval_metric,
             }
 
+        # Add reward column
+        dataset_config['reward_column'] = reward_column
+
         return dataset_config
 
     def _infer_column_properties(self, dtype) -> (str, Optional[Dict[str, Any]], str):
@@ -214,6 +217,7 @@ class BaseDataset(Dataset):
         """Set up the dataset by sorting and resetting the index."""
         self.episode_column = self.dataset_config["episode_column"]
         self.timestep_column = self.dataset_config["timestep_column"]
+        self.reward_column = self.dataset_config["reward_column"]
         self.df = self.df.sort_values(by=[self.episode_column, self.timestep_column])
         self.df = self.df.reset_index(drop=True)
         self.num_episodes = len(self.df[self.episode_column].unique())

@@ -5,7 +5,7 @@ import numpy as np
 from .base_dataset import BaseDataset
 from .utils.processors import ProcessorRegistry
 
-from typing import List, Tuple, Dict, Any
+from typing import List, Tuple, Dict, Any, Optional
 from sklearn.decomposition import PCA
 
 class TimeseriesDataset(BaseDataset):
@@ -39,7 +39,7 @@ class TimeseriesDataset(BaseDataset):
         reward_column: str = None, 
         state_columns: List[str] = None, 
         action_columns: List[str] = None,
-        lookback_timesteps: int = 4,
+        lookback_timesteps: int = None,
         forecast_timesteps: int = 1,
         train_processors: bool = True,
         is_inference: bool = False,
@@ -59,10 +59,18 @@ class TimeseriesDataset(BaseDataset):
         """
         super().__init__(df, dataset_config, unit_index, timestep_column, reward_column, state_columns, action_columns)
         
+                
+        # Add timeseries specific attributes to dataset_config
+        if lookback_timesteps is None:
+            self.lookback_timesteps = dataset_config.get("lookback_timesteps", 1)
+        else:
+            self.lookback_timesteps = lookback_timesteps
+            self.dataset_config["lookback_timesteps"] = self.lookback_timesteps
+
+                
         self.is_inference = is_inference
         self.noise_intensity_on_past_states = noise_intensity_on_past_states
-
-        self.lookback_timesteps = lookback_timesteps
+                
         self.forecast_timesteps = forecast_timesteps
 
         self.reward_column = reward_column
