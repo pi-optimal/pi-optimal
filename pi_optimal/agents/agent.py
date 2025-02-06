@@ -19,8 +19,16 @@ import json
 import os
 import glob
 import datetime
+from typing import List, Dict
+
 
 class Agent():
+    MODEL_REGISTRY = {
+    "NeuralNetwork": NeuralNetwork,
+    "SupportVectorMachine": SupportVectorMachine, 
+    "RandomForest": RandomForest
+    }
+
     def __init__(self, name: str = "pi_optimal_agent"):                
         self.name = name
         self.status = "Initialized"
@@ -50,7 +58,7 @@ class Agent():
 
         return constraints
 
-    def train(self, dataset: BaseDataset, constraints: dict = None):
+    def train(self, dataset: BaseDataset, constraints: dict = None, model_config: List[Dict] = None):
         
         self.type = dataset.action_type
 
@@ -67,23 +75,22 @@ class Agent():
             self.logger.error(f"Agent type {self.type} not supported.")
             raise NotImplementedError
         
-        self.dataset_config = dataset.dataset_config
-        self.models = []
-        # rf_reg = RandomForest(n_estimators=100, 
-        #                         max_depth=None, 
-        #                         n_jobs=-1,
-        #                         verbose=0,
-        #                         random_state=0)
-        rf_reg = NeuralNetwork()    
-        self.models.append(rf_reg)
+        self.dataset_config = dataset.dataset_config        
 
-        # rf_reg = RandomForest(n_estimators=100, 
-        #                         max_depth=None, 
-        #                         n_jobs=-1,
-        #                         verbose=0,
-        #                         random_state=1)
-        rf_reg = NeuralNetwork()
-        self.models.append(rf_reg)
+        if model_config is None:
+            # Default configuration
+            model_config = [
+                {"model_type": "NeuralNetwork", "params": {}},
+                {"model_type": "NeuralNetwork", "params": {}}
+            ]
+
+        self._validate_models(model_config)
+
+        self.models = []
+        for config in model_config:
+            model_cls = self.MODEL_REGISTRY[config["model_type"]]
+            model = model_cls(**config.get("params", {}))
+            self.models.append(model)
 
         n_models = len(self.models)
 
@@ -167,6 +174,18 @@ class Agent():
             os.makedirs(agent_path)
             os.makedirs(f"{agent_path}/models")
 
+        # Save models first and gather their configs (type and file name)
+        models_config = []
+        if hasattr(self, 'models') and self.models:
+            for i, model in enumerate(self.models):
+                model_filename = f"model_{i}.pkl"
+                model_path = f"{agent_path}/models/{model_filename}"
+                model.save(model_path)
+                models_config.append({
+                    "model_type": model.__class__.__name__,
+                    "model_filename": model_filename
+                })
+        
         # Save agent configuration
         config = {
             'name': self.name,
@@ -174,7 +193,8 @@ class Agent():
             'status': self.status,            
             'version': '0.1',
             'created_at': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            'dataset_config': serialize_processors(self.dataset_config.copy(), agent_path)
+            'dataset_config': serialize_processors(self.dataset_config.copy(), agent_path),
+            'models_config': models_config
         }
         
         with open(f"{agent_path}/agent_config.json", "w") as f:
@@ -192,7 +212,7 @@ class Agent():
         # Save models if they exist
         if hasattr(self, 'models') and self.models:
             for i, model in enumerate(self.models):
-                model.save(f"{agent_path}/models/model_{i}.joblib")
+                model.save(f"{agent_path}/models/model_{i}.pkl")
 
     @classmethod 
     def load(cls, path: str):
@@ -226,23 +246,52 @@ class Agent():
                 for key, value in deserialize_policy_dict(policy_config['params']).items():
                     setattr(agent.policy, key, value)
 
-        # Load models if they exist
-        model_files = glob.glob(f"{path}/models/model_*.joblib")
-        if model_files:
-            agent.models = []
-            for model_path in sorted(model_files):
-                model = NeuralNetwork.load(model_path) 
-                agent.models.append(model)
+        # Load models using the saved models_config list
+        agent.models = []
+        models_config = config.get('models_config', [])
+        for model_entry in models_config:
+            model_type = model_entry['model_type']
+            model_filename = model_entry['model_filename']
+            model_path = f"{path}/models/{model_filename}"
+            if model_type not in cls.MODEL_REGISTRY:
+                raise ValueError(f"Unknown model type '{model_type}' found in saved configuration.")
+            model_cls = cls.MODEL_REGISTRY[model_type]
+            model = model_cls.load(model_path)
+            agent.models.append(model)
 
         return agent
     
 
-    def _validate_models(self):
-        """Validate that all required models are loaded correctly."""
-        if not self.models:
-            self.logger.error("No models found in agent")
-            raise ValueError("No models found in agent")
-        for model in self.models:
-            if not isinstance(model, (RandomForest, SupportVectorMachine, NeuralNetwork)):
-                self.logger.error(f"Invalid model type: {type(model)}")
-                raise TypeError(f"Invalid model type: {type(model)}")
+    def _validate_models(self, model_config: list) -> None:
+        """Validate model configuration structure and parameters."""
+        required_keys = {"model_type", "params"}
+        
+        for i, config in enumerate(model_config):
+            # Check required keys
+            missing_keys = required_keys - config.keys()
+            if missing_keys:
+                self.logger.error(f"Model config #{i+1} missing required keys: {missing_keys}")
+                raise ValueError(
+                    f"Model config #{i+1} missing required keys: {missing_keys}"
+                )
+            
+            # Validate model type
+            model_type = config["model_type"]
+            if model_type not in self.MODEL_REGISTRY:
+                available_models = list(self.MODEL_REGISTRY.keys())
+                self.logger.error(f"Invalid model type '{model_type}' in config #{i+1}. ")
+                raise ValueError(
+                    f"Invalid model type '{model_type}' in config #{i+1}. "
+                    f"Available models: {available_models}"
+                )
+            
+            # Validate parameters type
+            if not isinstance(config["params"], dict):
+                self.logger.error(
+                    f"Parameters for model #{i+1} must be a dictionary, "
+                    f"got {type(config['params']).__name__}"
+                )
+                raise TypeError(
+                    f"Parameters for model #{i+1} must be a dictionary, "
+                    f"got {type(config['params']).__name__}"
+                    )

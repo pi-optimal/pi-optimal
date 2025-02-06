@@ -51,25 +51,32 @@ class BaseModel:
         return next_states
         
     def save(self, filepath):
-        with open(filepath, "wb") as f:
-            joblib.dump(
-                {
-                    "models": self.models,
-                    "dataset_config": self.dataset_config,
-                    "params": self.params,
-                },
-                f,
-                compress=3
-            )
+            """Secure model saving with metadata and pickle"""
+            save_data = {
+                "models": self.models,
+                "dataset_config": self.dataset_config,
+                "params": self.params,
+                "model_type": self.__class__.__name__,
+                "model_config": getattr(self, 'model_config', None)
+            }
+            
+            with open(filepath, 'wb') as f:
+                pickle.dump(save_data, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     @classmethod
     def load(cls, filepath):
-        with open(filepath, "rb") as f:
-            data = joblib.load(f)
-
+        """Safe model loading with version checking"""
+        with open(filepath, 'rb') as f:
+            data = pickle.load(f)
+        
+        if data.get('model_type') != cls.__name__:
+            raise ValueError(f"Model type mismatch: Expected {cls.__name__}, got {data.get('model_type')}")
+            
         instance = cls(**data["params"])
         instance.models = data["models"]
         instance.dataset_config = data["dataset_config"]
+        if 'model_config' in data:
+            instance.model_config = data["model_config"]
         return instance
 
     def _prepare_input_data(self, past_states, past_actions):

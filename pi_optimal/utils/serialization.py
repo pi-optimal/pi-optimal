@@ -1,17 +1,16 @@
 import numpy as np
 import json
-import joblib
+import pickle
 from typing import Any, Dict
 import os
+import datetime
 
 def serialize_processors(config: dict, path: str) -> dict:
     """
     Converts processor objects to their string representation and saves them.
-
     Args:
         config (dict): The configuration dictionary containing processor objects.
         path (str): The directory path where processors will be saved.
-
     Returns:
         dict: The configuration dictionary with processor paths.
     """
@@ -35,95 +34,91 @@ def serialize_processors(config: dict, path: str) -> dict:
                 processed[key] = value
         return processed
 
-    # Process the config and collect all processors
     serialized_config = _process_dict(config, processors_dict)
     
-    # Save all processors in a single file
+    # Safe path handling with pickle
     processors_path = os.path.join(path, "processors.pkl")
     os.makedirs(os.path.dirname(processors_path), exist_ok=True)
-    joblib.dump(processors_dict, processors_path)
+    with open(processors_path, 'wb') as f:
+        pickle.dump(processors_dict, f, protocol=pickle.HIGHEST_PROTOCOL)
     
-    # Store the path to all processors
     serialized_config['_processors_path'] = "processors.pkl"
     return serialized_config
 
 def deserialize_processors(config: dict, base_path: str) -> dict:
     """
-    Converts processor strings back to objects by loading them.
-
+    Reconstructs processor objects from their string representation.
     Args:
-        config (dict): The configuration dictionary containing processor paths.
+        config (dict): The configuration dictionary with processor paths.
         base_path (str): The base directory path where processors are saved.
-
     Returns:
         dict: The configuration dictionary with processor objects.
     """
-    # Load all processors from the single file
-    processors_path = os.path.join(base_path, config.pop('_processors_path', None))
-    all_processors = joblib.load(processors_path) if processors_path else {}
-    
-    def _process_dict(d):
-        processed = {}
-        for key, value in d.items():
-            if isinstance(value, dict):
-                if key == 'processor' and 'key' in value:
-                    processed[key] = all_processors[value['key']]
-                else:
-                    processed[key] = _process_dict(value)
-            else:
-                processed[key] = value
-        return processed
+    try:
+        processors_path = os.path.join(base_path, config.pop('_processors_path'))
+        with open(processors_path, 'rb') as f:
+            all_processors = pickle.load(f)
+    except (KeyError, FileNotFoundError):
+        all_processors = {}
 
-    deserialized_config = _process_dict(config)
-    
-    # Convert string keys to integers
-    if 'states' in deserialized_config:
-        deserialized_config['states'] = {int(k): v for k, v in deserialized_config['states'].items()}    
-    if 'actions' in deserialized_config:
-        deserialized_config['actions'] = {int(k): v for k, v in deserialized_config['actions'].items()}
-    
-    return deserialized_config
+    def _process_dict(d):
+            processed = {}
+            for key, value in d.items():
+                # Convert numeric keys back to integers
+                if isinstance(key, str) and key.isdigit():
+                    new_key = int(key)
+                else:
+                    new_key = key
+
+                if isinstance(value, dict):
+                    # Handle processor reconstruction
+                    if new_key == 'processor' and 'key' in value:
+                        processed[new_key] = all_processors.get(value['key'])
+                    else:
+                        processed[new_key] = _process_dict(value)
+                else:
+                    processed[new_key] = value
+            return processed
+
+    return _process_dict(config)
 
 def serialize_policy_dict(policy_dict: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Serialize policy dictionary, handling special cases.
-
+    Serializes policy dictionary, excluding loggers and supporting numpy arrays.
     Args:
         policy_dict (Dict[str, Any]): The policy dictionary to serialize.
-
     Returns:
         Dict[str, Any]: The serialized policy dictionary.
     """
     serialized_dict = {}
     for key, value in policy_dict.items():
-        if value is None:
-            serialized_dict[key] = None
-        elif isinstance(value, dict):
+        if key == 'logger':
+            continue  # Skip logger serialization
+        
+        if isinstance(value, dict):
             serialized_dict[key] = {
                 k: v.tolist() if isinstance(v, np.ndarray) else v
                 for k, v in value.items()
             }
         elif isinstance(value, np.ndarray):
             serialized_dict[key] = value.tolist()
+        elif hasattr(value, '__dict__'):
+            serialized_dict[key] = serialize_policy_dict(value.__dict__)
         else:
             serialized_dict[key] = value
     return serialized_dict
 
 def deserialize_policy_dict(policy_dict: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Deserialize policy dictionary, converting lists back to numpy arrays.
-
+    Deserializes policy dictionary, restoring numpy arrays.
     Args:
-        policy_dict (Dict[str, Any]): The policy dictionary to deserialize.
-
+        policy_dict (Dict[str, Any]): The serialized policy dictionary.
     Returns:
         Dict[str, Any]: The deserialized policy dictionary.
     """
     deserialized_dict = {}
     for key, value in policy_dict.items():
-        if value is None:
-            deserialized_dict[key] = None
-        elif isinstance(value, dict):
+        if isinstance(value, dict):
             deserialized_dict[key] = {
                 k: np.array(v) if isinstance(v, list) else v
                 for k, v in value.items()
@@ -136,13 +131,11 @@ def deserialize_policy_dict(policy_dict: Dict[str, Any]) -> Dict[str, Any]:
 
 class NumpyEncoder(json.JSONEncoder):
     """
-    Custom JSON encoder for numpy types.
+    JSON encoder with extended support for numpy and datetime objects.
     """
     def default(self, obj):
-        if isinstance(obj, np.ndarray):
-            return obj.tolist()
-        if isinstance(obj, np.integer):
-            return int(obj)
-        if isinstance(obj, np.floating):
-            return float(obj)
+        if isinstance(obj, np.generic):
+            return obj.item()
+        if isinstance(obj, datetime.datetime):
+            return obj.isoformat()
         return super().default(obj)
