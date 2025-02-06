@@ -270,6 +270,7 @@ class Agent():
             # Check required keys
             missing_keys = required_keys - config.keys()
             if missing_keys:
+                self.logger.error(f"Model config #{i+1} missing required keys: {missing_keys}")
                 raise ValueError(
                     f"Model config #{i+1} missing required keys: {missing_keys}"
                 )
@@ -278,6 +279,7 @@ class Agent():
             model_type = config["model_type"]
             if model_type not in self.MODEL_REGISTRY:
                 available_models = list(self.MODEL_REGISTRY.keys())
+                self.logger.error(f"Invalid model type '{model_type}' in config #{i+1}. ")
                 raise ValueError(
                     f"Invalid model type '{model_type}' in config #{i+1}. "
                     f"Available models: {available_models}"
@@ -285,6 +287,10 @@ class Agent():
             
             # Validate parameters type
             if not isinstance(config["params"], dict):
+                self.logger.error(
+                    f"Parameters for model #{i+1} must be a dictionary, "
+                    f"got {type(config['params']).__name__}"
+                )
                 raise TypeError(
                     f"Parameters for model #{i+1} must be a dictionary, "
                     f"got {type(config['params']).__name__}"
