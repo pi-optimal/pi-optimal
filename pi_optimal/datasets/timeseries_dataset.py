@@ -57,12 +57,20 @@ class TimeseriesDataset(BaseDataset):
             is_inference (bool, optional): Whether the dataset is used for inference. Defaults to False.
             noise_intensity_on_past_states (float, optional): Intensity of noise to add to past states. Defaults to 0.0.
         """
-        super().__init__(df, dataset_config, unit_index, timestep_column, reward_column, state_columns, action_columns, lookback_timesteps)
+        super().__init__(df, dataset_config, unit_index, timestep_column, reward_column, state_columns, action_columns)
         
+                
+        # Add timeseries specific attributes to dataset_config
+        if lookback_timesteps is None:
+            self.lookback_timesteps = dataset_config.get("lookback_timesteps", 1)
+        else:
+            self.lookback_timesteps = lookback_timesteps
+            self.dataset_config["lookback_timesteps"] = self.lookback_timesteps
+
+                
         self.is_inference = is_inference
         self.noise_intensity_on_past_states = noise_intensity_on_past_states
-
-        self.lookback_timesteps = self.dataset_config["lookback_timesteps"]
+                
         self.forecast_timesteps = forecast_timesteps
 
         self.reward_column = reward_column
