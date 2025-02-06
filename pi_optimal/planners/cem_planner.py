@@ -45,7 +45,7 @@ class CEMPlanner(BasePlanner):
              action_history, 
              objective_function, 
              n_iter: int = 10, 
-             allow_sigma: bool = False, 
+             allow_sigma: bool = True, 
              horizon: int = 4,
              population_size: int = 1000, 
              topk: int = 100,
