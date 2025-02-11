@@ -1,3 +1,4 @@
+# pi_optimal/planners/cem_planner.py
 from abc import ABC, abstractmethod
 from .base_planner import BasePlanner
 import numpy as np
@@ -130,7 +131,3 @@ class CEMPlanner(BasePlanner):
             raise ValueError("n_iter must be a positive integer.")
         if not isinstance(uncertainty_weight, float) or uncertainty_weight < 0 or uncertainty_weight > 1:
             raise ValueError("uncertainty_weight must be a float between 0 and 1.")
-
-
-    def visualize(self, models, starting_state, action_history, actions):
-        trajectories = self.simulate_trajectories(models, states.copy(), actions, action_history.copy())

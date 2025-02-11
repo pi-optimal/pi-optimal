@@ -88,7 +88,8 @@ class BaseEvaluator:
 
     def evaluate_episode(self, dataset: Dataset, model: BaseModel, episode_idx: int, initial_state_idx: int, n_rollout_steps: int, backtransform: bool = True) -> Dict[str, Dict[str, Any]]:
         """
-        Evaluate the model on a single point in an episode episode from the dataset.
+        Evaluate the model from a single point in an episode of the dataset. Main purpose 
+        is to debug the model's predictions by visualizing the predicted and true values.
 
         Args:
             dataset (Dataset): The dataset to evaluate the model on.
