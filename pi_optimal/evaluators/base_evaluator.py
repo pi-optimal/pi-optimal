@@ -51,12 +51,12 @@ class BaseEvaluator:
         # Initialize evaluation metrics
         for idx, item in self.dataset_config["states"].items():
             data_type: str = item["type"]
-            if "evaluation_metric" not in item:
-                item["evaluation_metric"] = self.default_metrics[data_type]
-            elif item["evaluation_metric"] not in self.validation_metrics[data_type]:
+            if item["evaluation_metric"] not in self.validation_metrics[data_type]:
                 raise ValueError(
                     f"Unsupported metric for data type {data_type}: {item['evaluation_metric']}"
                 )
+            elif "evaluation_metric" not in item:
+                item["evaluation_metric"] = self.default_metrics[data_type]
     
     def evaluate_one_step(self, dataset: Dataset, model: BaseModel, backtransform: bool = True) -> Dict[str, Dict[str, Any]]:
         """
