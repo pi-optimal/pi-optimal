@@ -63,9 +63,9 @@ In dynamic and complex systems, even experienced operators can struggle to find 
 ## Installation
 Install pi_optimal directly from PyPI using pip:
 
-    ```bash
-    pip install pi-optimal
-    ```
+```bash
+pip install pi-optimal
+```
     
 Once installed, you can explore the examples in the [notebooks](./notebooks) directory to see how to integrate pi_optimal into your projects.
 
