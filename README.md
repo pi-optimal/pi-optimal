@@ -6,8 +6,8 @@
     <a href="https://github.com/pi-optimal/pi-optimal/releases">
         <img src="https://img.shields.io/github/v/release/pi-optimal/pi-optimal?color=blue" alt="Latest Release"/>
     </a>
-    <a href="https://github.com/pi-optimal/pi-optimal/blob/main/LICENSE">
-        <img alt="License" src="https://img.shields.io/github/license/pi-optimal/pi-optimal"/>
+    <a href="https://pypi.org/project/pi-optimal/">
+        <img alt="PyPI - Version" src="https://img.shields.io/pypi/v/pi_optimal">
     </a>
 </p>
 
@@ -61,31 +61,13 @@ In dynamic and complex systems, even experienced operators can struggle to find 
 # 🚀 Getting Started
 
 ## Installation
-
-`pi_optimal` uses [Poetry](https://python-poetry.org/) for dependency management and installation. Follow these steps to get started:
-
-1. **Ensure you are not within a virtual environment** (e.g., deactivate it with `conda deactivate` if using Conda).  
-2. **Install Poetry** (if you don’t already have it):
+Install pi_optimal directly from PyPI using pip:
 
     ```bash
-    pipx install poetry
+    pip install pi-optimal
     ```
-
-3. **Clone the repository** and navigate to its directory:
-
-    ```bash
-    git clone https://github.com/pi-optimal/pi-optimal.git
-    cd pi-optimal
-    ```
-
-4. **Install dependencies** using Poetry:
-
-    ```bash
-    poetry install
-    ```
-
-Once you've completed the installation, you can open any notebook from the [notebooks](./notebooks) directory. To use the installed environment, select the newly created virtual environment in your Jupyter kernel selection. It should appear with a name similar to `pi-optimal-xyz-py3.10`.
-
+    
+Once installed, you can explore the examples in the [notebooks](./notebooks) directory to see how to integrate pi_optimal into your projects.
 
 ## Example Usage
 
@@ -171,9 +153,39 @@ If you have questions or need assistance, the fastest way to get answers is via 
 
 ---
 
+# 🔨 Development
+
+If you want to contribute to `pi_optimal`, we recommend using [Poetry](https://python-poetry.org/) for managing dependencies and environments. Follow these steps to set up your development environment:
+
+1. **Deactivate any active virtual environments**:  
+   Ensure you are not already in a virtual environment (for example, use `conda deactivate` if you are using Conda).
+
+2. **Install Poetry** (if you haven't already):
+
+    ```bash
+    pipx install poetry
+    ```
+
+3. **Clone the repository** and navigate into its directory:
+
+    ```bash
+    git clone https://github.com/pi-optimal/pi-optimal.git
+    cd pi-optimal
+    ```
+
+4. **Install the project dependencies** using Poetry:
+
+    ```bash
+    poetry install
+    ```
+
+Once the installation is complete, you can open any notebook from the [notebooks](./notebooks) directory. When running Jupyter, select the virtual environment created by Poetry (it should appear with a name similar to `pi-optimal-xyz-py3.10`).
+
+Happy coding!
+
 # 🌱 Roadmap
 
-Check out our [roadmap](https://github.com/pi-optimal/pi-optimal/projects) to see what we’re working on next. Have suggestions or would like to see a new feature prioritized? Let us know in our Slack or open an issue.
+We will publish our roadmap in the upcoming weeks. Have suggestions or would like to see a new feature prioritized? Let us know in our Slack or open an issue.
 
 ---
 
