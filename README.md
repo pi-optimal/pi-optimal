@@ -4,7 +4,7 @@
 
 <p align="center">
     <a href="https://github.com/pi-optimal/pi-optimal/releases">
-        <img src="https://img.shields.io/github/v/release/pi-optimal/pi-optimal?color=blue" alt="Latest Release"/>
+        <img alt="GitHub Release" src="https://img.shields.io/github/v/release/pi-optimal/pi-optimal?include_prereleases">
     </a>
     <a href="https://pypi.org/project/pi-optimal/">
         <img alt="PyPI - Version" src="https://img.shields.io/pypi/v/pi_optimal">
@@ -15,7 +15,7 @@
     <strong>
         <a href="https://pi-optimal.com">Website</a>
         •
-        <a href="https://pi-optimal.readthedocs.io/en/stable/">Docs</a>
+        <a href="https://pi-optimal.com/docs/getting-started">Docs</a>
         •
         <a href="https://join.slack.com/t/pioptimal/shared_invite/zt-2w4z32qtt-Q7EdDvmSi9vWFCPb22_qVA">Community Slack</a>
     </strong>
@@ -131,7 +131,7 @@ print(optimal_actions)
 - **API Reference**: Detailed documentation for all classes, methods, and functions.
 - **Best Practices**: Learn recommended strategies for defining rewards, choosing architectures, and tuning hyperparameters.
 
-[Read the Docs »](https://pi-optimal.readthedocs.io/en/stable/)
+[Read the Docs »](https://pi-optimal.com/docs/getting-started)
 
 ---
 
