@@ -25,7 +25,7 @@ from pi_optimal.utils.data_generators.gym_data_generator import (
             },
         ),
         (
-            "LunarLander-v2",
+            "LunarLander-v3",
             {
                 "episode",
                 "step",
