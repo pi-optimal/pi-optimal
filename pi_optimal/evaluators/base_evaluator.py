@@ -11,7 +11,7 @@ class BaseEvaluator:
     A base class for evaluating machine learning models on different types of data.
 
     This class provides functionality to evaluate models on numerical, binary, and 
-    categorical data using various metrics from scikit-learn.
+    categorial data using various metrics from scikit-learn.
 
     Attributes:
         dataset_config (Dict[str, Any]): Configuration of the dataset, including feature types and indices.
@@ -25,7 +25,7 @@ class BaseEvaluator:
         default_metrics: Dict[str, str] = {
             "numerical": "mse",
             "binary": "accuracy",
-            "categorical": "f1_weighted",
+            "categorial": "f1_weighted",
         },
     ):
         """
@@ -35,7 +35,7 @@ class BaseEvaluator:
             dataset_config (Dict[str, Any]): Configuration of the dataset, including feature types and indices.
             default_metrics (Dict[str, str], optional): Default evaluation metrics for each data type. 
                                               Defaults to MSE for numerical, accuracy for binary, 
-                                              and F1 weighted for categorical data.
+                                              and F1 weighted for categorial data.
         
         Raises:
             ValueError: If an unsupported metric is specified for a data type.
@@ -45,18 +45,18 @@ class BaseEvaluator:
         self.validation_metrics: Dict[str, List[str]] = {
             "numerical": ["mse", "rmse", "mae"],
             "binary": ["accuracy", "f1_binary", "roc_auc"],
-            "categorical": ["accuracy", "f1_weighted", "f1_macro", "f1_micro"],
+            "categorial": ["accuracy", "f1_weighted", "f1_macro", "f1_micro"],
         }
 
         # Initialize evaluation metrics
         for idx, item in self.dataset_config["states"].items():
             data_type: str = item["type"]
-            if "evaluation_metric" not in item:
-                item["evaluation_metric"] = self.default_metrics[data_type]
-            elif item["evaluation_metric"] not in self.validation_metrics[data_type]:
+            if item["evaluation_metric"] not in self.validation_metrics[data_type]:
                 raise ValueError(
                     f"Unsupported metric for data type {data_type}: {item['evaluation_metric']}"
                 )
+            elif "evaluation_metric" not in item:
+                item["evaluation_metric"] = self.default_metrics[data_type]
     
     def evaluate_one_step(self, dataset: Dataset, model: BaseModel, backtransform: bool = True) -> Dict[str, Dict[str, Any]]:
         """
@@ -88,7 +88,8 @@ class BaseEvaluator:
 
     def evaluate_episode(self, dataset: Dataset, model: BaseModel, episode_idx: int, initial_state_idx: int, n_rollout_steps: int, backtransform: bool = True) -> Dict[str, Dict[str, Any]]:
         """
-        Evaluate the model on a single episode from the dataset.
+        Evaluate the model from a single point in an episode of the dataset. Main purpose 
+        is to debug the model's predictions by visualizing the predicted and true values.
 
         Args:
             dataset (Dataset): The dataset to evaluate the model on.
@@ -104,8 +105,27 @@ class BaseEvaluator:
         next_states, next_states_hat = self._rollout_episode_n_steps(dataset, model, episode_idx, initial_state_idx, n_rollout_steps, backtransform)
         return self._evaluate_next_state_prediction(next_states[0, :, 0, :], next_states_hat[0, :, 0, :])
 
+    def evaluate_dataset(self, dataset: Dataset, model: BaseModel, n_steps: int, backtransform: bool = True) -> Dict[int, Dict[str, float]]:
+            """
+            Evaluate model predictions over multiple timesteps.
+
+            Args:
+                dataset (Dataset): The dataset containing states, actions, and next states.
+                model (BaseModel): The model to evaluate.
+                n_steps (int): Number of steps to evaluate.
+                backtransform (bool, optional): Whether to apply inverse transformation to states. Defaults to True.
+
+            Returns:
+                Dict[int, Dict[str, float]]: Evaluation results for each step.
+            """
+            max_timesteps = dataset.max_episode_length
+            next_states_per_rollout, next_states_hat_per_rollout = self._rollout_dataset_n_steps(dataset, model, n_steps, max_timesteps, backtransform)
+            return self._evaluate_dataset_rollout(next_states_per_rollout, next_states_hat_per_rollout)
+
     def _rollout_episode_n_steps(self, dataset: Dataset, model: BaseModel, episode_idx: int, initial_state_idx: int, n_rollout_steps: int, backtransform: bool = True) -> Union[np.ndarray, np.ndarray]:
-        
+        """
+        Evaluate the model on a single episode from the dataset.
+        """
         states, actions, next_states, next_action = dataset.get_episode(episode_idx)
         episode_length = dataset.episode_lengths[episode_idx]
 
@@ -113,15 +133,15 @@ class BaseEvaluator:
         assert n_rollout_steps > 0
         assert initial_state_idx + n_rollout_steps <= episode_length
 
-        inital_state = states[initial_state_idx]
+        initial_state = states[initial_state_idx]
         next_states = next_states[initial_state_idx:(initial_state_idx + n_rollout_steps)]
         actions = actions[initial_state_idx:(initial_state_idx + n_rollout_steps)]
 
-        inital_state = np.expand_dims(inital_state, axis=0)
+        initial_state = np.expand_dims(initial_state, axis=0)
         next_states = np.expand_dims(next_states, axis=0)
         actions = np.expand_dims(actions, axis=0)
 
-        next_states_hat = model.forward_n_steps(inital_state, actions, n_steps=n_rollout_steps)
+        next_states_hat = model.forward_n_steps(initial_state, actions, n_steps=n_rollout_steps)
 
         if backtransform:
             for step in range(n_rollout_steps):
@@ -129,23 +149,6 @@ class BaseEvaluator:
                 next_states_hat[:,step,0,:] = dataset.inverse_transform_features("states", next_states_hat[:,step,0,:])
             
         return next_states, next_states_hat
-
-    def evaluate_dataset(self, dataset: Dataset, model: BaseModel, n_steps: int, backtransform: bool = True) -> Dict[int, Dict[str, float]]:
-        """
-        Evaluate model predictions over multiple timesteps.
-
-        Args:
-            dataset (Dataset): The dataset containing states, actions, and next states.
-            model (BaseModel): The model to evaluate.
-            n_steps (int): Number of steps to evaluate.
-            backtransform (bool, optional): Whether to apply inverse transformation to states. Defaults to True.
-
-        Returns:
-            Dict[int, Dict[str, float]]: Evaluation results for each step.
-        """
-        max_timesteps = dataset.max_episode_length
-        next_states_per_rollout, next_states_hat_per_rollout = self._rollout_dataset_n_steps(dataset, model, n_steps, max_timesteps, backtransform)
-        return self._evaluate_dataset_rollout(next_states_per_rollout, next_states_hat_per_rollout)
     
     def _evaluate_dataset_rollout(self, next_states_per_rollout: List[List[np.ndarray]], next_states_hat_per_rollout: List[List[np.ndarray]]) -> Dict[int, Dict[str, float]]:
         """
@@ -196,7 +199,9 @@ class BaseEvaluator:
         next_states_hat_per_rollout = [[] for _ in range(n_steps)]
 
         # Iterate through all starting timesteps
-        for initial_timestep in tqdm(range(0, max_timesteps + 1), desc="Performing rollouts"):
+        progress_bar = tqdm(total=max_timesteps + 1, desc="Performing rollouts")
+        for initial_timestep in range(0, max_timesteps + 1):
+            progress_bar.update(1)
             existing_episodes = dataset.get_existing_episodes_at_timestep(i=initial_timestep)
             
             # Perform rollout for n steps
@@ -245,7 +250,6 @@ class BaseEvaluator:
         Evaluate the model's predictions for each state feature.
 
         Args:
-            next_states (np.ndarray): True future state values.
             next_states_hat (np.ndarray): Predicted future state values.
             backtransform (bool, optional): Whether to backtransform the predicted values. Defaults to True.
 
@@ -289,7 +293,7 @@ class BaseEvaluator:
         Args:
             y_true (np.ndarray): True values.
             y_pred (np.ndarray): Predicted values.
-            data_type (str): Type of the data ('numerical', 'binary', or 'categorical').
+            data_type (str): Type of the data ('numerical', 'binary', or 'categorial').
             metric (str): The metric to calculate.
 
         Returns:
@@ -305,8 +309,8 @@ class BaseEvaluator:
                 return float(np.sqrt(mean_squared_error(y_true, y_pred)))
             elif metric == "mae":
                 return float(mean_absolute_error(y_true, y_pred))
-        elif data_type in ["binary", "categorical"]:
-            y_pred_classes = np.round(y_pred).astype(int)
+        elif data_type in ["binary", "categorial"]:
+            y_pred_classes = y_pred
             if metric == "accuracy":
                 return float(accuracy_score(y_true, y_pred_classes))
             elif metric.startswith("f1_"):

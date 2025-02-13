@@ -1,4 +1,4 @@
-# base_dataset.py
+# pi_optimal/datasets/base_dataset.py
 import pandas as pd
 import numpy as np
 from torch.utils.data import Dataset
@@ -117,15 +117,17 @@ class BaseDataset(Dataset):
 
     def _infer_column_properties(self, dtype) -> (str, Optional[Dict[str, Any]], str):
         """Infer the column type, default processor, and evaluation metric based on dtype.
-
         Args:
             dtype: The data type of the column.
-
         Returns:
             Tuple[str, Optional[Dict[str, Any]], str]: A tuple containing the column type,
                 default processor, and evaluation metric.
         """
-        if pd.api.types.is_numeric_dtype(dtype):
+        if pd.api.types.is_bool_dtype(dtype):
+            col_type = "binary"
+            processor = None
+            eval_metric = "f1_binary"
+        elif pd.api.types.is_numeric_dtype(dtype):
             col_type = "numerical"
             processor = {"name": "StandardScaler", "params": {}}
             eval_metric = "mae"
@@ -133,10 +135,6 @@ class BaseDataset(Dataset):
             col_type = "categorial"
             processor = {"name": "OrdinalEncoder"}
             eval_metric = "accuracy"
-        elif pd.api.types.is_bool_dtype(dtype):
-            col_type = "binary"
-            processor = None
-            eval_metric = "f1_binary"
         else:
             col_type = "unknown"
             processor = None
@@ -181,6 +179,7 @@ class BaseDataset(Dataset):
         expected_episodes = np.arange(unique_episodes.min(), unique_episodes.max() + 1)
         if not np.array_equal(unique_episodes, expected_episodes):
             self.logger.warning("Episodes are not continuous starting from the minimum episode number.")
+            Warning("Episodes are not continuous starting from the minimum episode number.")
             episode_mapping = {old: new for new, old in enumerate(unique_episodes)}
             self.df[episode_col] = self.df[episode_col].map(episode_mapping)
             self.logger.info("Adjusted episode numbering to start from 0 and be continuous.")
