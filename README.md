@@ -75,13 +75,16 @@ Below is a simplified excerpt demonstrating how `pi_optimal` can be applied to o
 
 ```python
 import pandas as pd
-import pi_optimal as po
+
+from pi_optimal.agents.agent import Agent
+from pi_optimal.datasets.timeseries_dataset import TimeseriesDataset
+from pi_optimal.utils.trajectory_visualizer import TrajectoryVisualizer
 
 # Load historical room climate control data
 df_room_history = pd.read_csv('room_climate_history.csv')
 
 # Prepare dataset: define states (e.g., room conditions), actions (e.g., heater settings), and reward (e.g., comfort level)
-climate_dataset = po.datasets.TimeseriesDataset(
+climate_dataset = TimeseriesDataset(
     df_room_history,
     state_columns=['temperature', 'humidity'],
     action_columns=['heater_power'],
@@ -92,16 +95,24 @@ climate_dataset = po.datasets.TimeseriesDataset(
 )
 
 # Train a reinforcement learning agent for climate control
-climate_agent = po.Agent(dataset=climate_dataset, type="mpc-continuous", config={"uncertainty_weight": 0.5})
-climate_agent.train()
+climate_agent = Agent()
+climate_agent.train(dataset=climate_dataset)
 
 # Load current room data to predict next actions
 df_current_conditions = pd.read_csv('current_room_conditions.csv')
-current_dataset = po.datasets.TimeseriesDataset(df_current_conditions, dataset_config=climate_dataset.dataset_config, lookback_timesteps=8, train_processors=False)
+current_dataset = TimeseriesDataset(df_current_conditions,
+                                                dataset_config=climate_dataset.dataset_config,
+                                                train_processors=False,
+                                                is_inference=True)
 
 # Predict optimal heater settings for improved comfort
 optimal_actions = climate_agent.predict(current_dataset)
 print(optimal_actions)
+
+
+# Playground to show simulated result of optimal actions and allows you to test different actions
+trajectory_visualizer = TrajectoryVisualizer(agent, current_dataset, best_actions=best_actions)
+trajectory_visualizer.display()
 ```
 
 ---
