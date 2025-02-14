@@ -4,10 +4,10 @@
 
 <p align="center">
     <a href="https://github.com/pi-optimal/pi-optimal/releases">
-        <img src="https://img.shields.io/github/v/release/pi-optimal/pi-optimal?color=blue" alt="Latest Release"/>
+        <img alt="GitHub Release" src="https://img.shields.io/github/v/release/pi-optimal/pi-optimal?include_prereleases">
     </a>
-    <a href="https://github.com/pi-optimal/pi-optimal/blob/main/LICENSE">
-        <img alt="License" src="https://img.shields.io/github/license/pi-optimal/pi-optimal"/>
+    <a href="https://pypi.org/project/pi-optimal/">
+        <img alt="PyPI - Version" src="https://img.shields.io/pypi/v/pi_optimal">
     </a>
 </p>
 
@@ -15,7 +15,7 @@
     <strong>
         <a href="https://pi-optimal.com">Website</a>
         •
-        <a href="https://pi-optimal.readthedocs.io/en/stable/">Docs</a>
+        <a href="https://pi-optimal.com/docs/getting-started">Docs</a>
         •
         <a href="https://join.slack.com/t/pioptimal/shared_invite/zt-2w4z32qtt-Q7EdDvmSi9vWFCPb22_qVA">Community Slack</a>
     </strong>
@@ -61,31 +61,13 @@ In dynamic and complex systems, even experienced operators can struggle to find 
 # 🚀 Getting Started
 
 ## Installation
+Install pi_optimal directly from PyPI using pip:
 
-`pi_optimal` uses [Poetry](https://python-poetry.org/) for dependency management and installation. Follow these steps to get started:
-
-1. **Ensure you are not within a virtual environment** (e.g., deactivate it with `conda deactivate` if using Conda).  
-2. **Install Poetry** (if you don’t already have it):
-
-    ```bash
-    pipx install poetry
-    ```
-
-3. **Clone the repository** and navigate to its directory:
-
-    ```bash
-    git clone https://github.com/pi-optimal/pi-optimal.git
-    cd pi-optimal
-    ```
-
-4. **Install dependencies** using Poetry:
-
-    ```bash
-    poetry install
-    ```
-
-Once you've completed the installation, you can open any notebook from the [notebooks](./notebooks) directory. To use the installed environment, select the newly created virtual environment in your Jupyter kernel selection. It should appear with a name similar to `pi-optimal-xyz-py3.10`.
-
+```bash
+pip install pi-optimal
+```
+    
+Once installed, you can explore the examples in the [notebooks](./notebooks) directory to see how to integrate pi_optimal into your projects.
 
 ## Example Usage
 
@@ -93,13 +75,16 @@ Below is a simplified excerpt demonstrating how `pi_optimal` can be applied to o
 
 ```python
 import pandas as pd
-import pi_optimal as po
+
+from pi_optimal.agents.agent import Agent
+from pi_optimal.datasets.timeseries_dataset import TimeseriesDataset
+from pi_optimal.utils.trajectory_visualizer import TrajectoryVisualizer
 
 # Load historical room climate control data
 df_room_history = pd.read_csv('room_climate_history.csv')
 
 # Prepare dataset: define states (e.g., room conditions), actions (e.g., heater settings), and reward (e.g., comfort level)
-climate_dataset = po.datasets.TimeseriesDataset(
+climate_dataset = TimeseriesDataset(
     df_room_history,
     state_columns=['temperature', 'humidity'],
     action_columns=['heater_power'],
@@ -110,16 +95,24 @@ climate_dataset = po.datasets.TimeseriesDataset(
 )
 
 # Train a reinforcement learning agent for climate control
-climate_agent = po.Agent(dataset=climate_dataset, type="mpc-continuous", config={"uncertainty_weight": 0.5})
-climate_agent.train()
+climate_agent = Agent()
+climate_agent.train(dataset=climate_dataset)
 
 # Load current room data to predict next actions
 df_current_conditions = pd.read_csv('current_room_conditions.csv')
-current_dataset = po.datasets.TimeseriesDataset(df_current_conditions, dataset_config=climate_dataset.dataset_config, lookback_timesteps=8, train_processors=False)
+current_dataset = TimeseriesDataset(df_current_conditions,
+                                                dataset_config=climate_dataset.dataset_config,
+                                                train_processors=False,
+                                                is_inference=True)
 
 # Predict optimal heater settings for improved comfort
 optimal_actions = climate_agent.predict(current_dataset)
 print(optimal_actions)
+
+
+# Playground to show simulated result of optimal actions and allows you to test different actions
+trajectory_visualizer = TrajectoryVisualizer(agent, current_dataset, best_actions=best_actions)
+trajectory_visualizer.display()
 ```
 
 ---
@@ -149,7 +142,7 @@ print(optimal_actions)
 - **API Reference**: Detailed documentation for all classes, methods, and functions.
 - **Best Practices**: Learn recommended strategies for defining rewards, choosing architectures, and tuning hyperparameters.
 
-[Read the Docs »](https://pi-optimal.readthedocs.io/en/stable/)
+[Read the Docs »](https://pi-optimal.com/docs/getting-started)
 
 ---
 
@@ -171,9 +164,39 @@ If you have questions or need assistance, the fastest way to get answers is via 
 
 ---
 
+# 🔨 Development
+
+If you want to contribute to `pi_optimal`, we recommend using [Poetry](https://python-poetry.org/) for managing dependencies and environments. Follow these steps to set up your development environment:
+
+1. **Deactivate any active virtual environments**:  
+   Ensure you are not already in a virtual environment (for example, use `conda deactivate` if you are using Conda).
+
+2. **Install Poetry** (if you haven't already):
+
+    ```bash
+    pipx install poetry
+    ```
+
+3. **Clone the repository** and navigate into its directory:
+
+    ```bash
+    git clone https://github.com/pi-optimal/pi-optimal.git
+    cd pi-optimal
+    ```
+
+4. **Install the project dependencies** using Poetry:
+
+    ```bash
+    poetry install
+    ```
+
+Once the installation is complete, you can open any notebook from the [notebooks](./notebooks) directory. When running Jupyter, select the virtual environment created by Poetry (it should appear with a name similar to `pi-optimal-xyz-py3.10`).
+
+Happy coding!
+
 # 🌱 Roadmap
 
-Check out our [roadmap](https://github.com/pi-optimal/pi-optimal/projects) to see what we’re working on next. Have suggestions or would like to see a new feature prioritized? Let us know in our Slack or open an issue.
+We will publish our roadmap in the upcoming weeks. Have suggestions or would like to see a new feature prioritized? Let us know in our Slack or open an issue.
 
 ---
 
