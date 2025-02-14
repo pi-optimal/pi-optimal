@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pi-optimal"
-version = "0.1.2"
+version = "0.1.3"
 description = "Python package for easy, data-efficient RL-based decision-making in business applications."
 authors = ["pi-optimal UG (haftungsbeschränkt) <hello@pi-optimal.com>"]
 maintainers = ["Jochen Luithardt <jol@pi-optimal.com>"]  # Move maintainers here
