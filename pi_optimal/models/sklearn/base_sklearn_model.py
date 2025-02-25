@@ -68,8 +68,11 @@ class BaseSklearnModel(BaseModel):
         
         if data.get('model_type') != cls.__name__:
             raise ValueError(f"Model type mismatch: Expected {cls.__name__}, got {data.get('model_type')}")
-            
-        instance = cls(params=data["params"])
+
+        if data.get('model_type') == 'HybridModel':      
+            instance = cls(params=data["params"])
+        else:
+            instance = cls(**data["params"])
 
         instance.models = data["models"]
         instance.dataset_config = data["dataset_config"]
