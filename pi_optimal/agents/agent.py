@@ -1,9 +1,9 @@
 from pi_optimal.datasets.base_dataset import BaseDataset
 from pi_optimal.planners.cem_discrete import CEMDiscretePlanner
 from pi_optimal.planners.cem_continuous import CEMContinuousPlanner
-from pi_optimal.models.random_forest_model import RandomForest
-from pi_optimal.models.svm import SupportVectorMachine
-from pi_optimal.models.mlp import NeuralNetwork
+from pi_optimal.models.sklearn.random_forest_model import RandomForest
+from pi_optimal.models.sklearn.svm import SupportVectorMachine
+from pi_optimal.models.sklearn.mlp import NeuralNetwork
 from pi_optimal.utils.serialization import (
     serialize_processors,
     deserialize_processors,

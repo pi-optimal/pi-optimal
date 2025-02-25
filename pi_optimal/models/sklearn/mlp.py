@@ -1,8 +1,8 @@
-from .base_model import BaseModel
+from .base_sklearn_model import BaseSklearnModel
 from sklearn.neural_network import MLPRegressor, MLPClassifier
 
 
-class NeuralNetwork(BaseModel):
+class NeuralNetwork(BaseSklearnModel):
     def __init__(
         self,
         hidden_layer_sizes=(100,),

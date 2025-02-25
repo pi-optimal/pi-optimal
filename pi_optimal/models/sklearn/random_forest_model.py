@@ -1,8 +1,8 @@
-from .base_model import BaseModel
+from .base_sklearn_model import BaseSklearnModel
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 
 
-class RandomForest(BaseModel):
+class RandomForest(BaseSklearnModel):
     def __init__(
         self,
         n_estimators=100,

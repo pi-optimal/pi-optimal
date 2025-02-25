@@ -1,7 +1,7 @@
-from .base_model import BaseModel
+from .base_sklearn_model import BaseSklearnModel
 from sklearn.svm import SVR, SVC
 
-class SupportVectorMachine(BaseModel):
+class SupportVectorMachine(BaseSklearnModel):
     def __init__(
         self,
         kernel='rbf',

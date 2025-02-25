@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 from torch.utils.data import Dataset, DataLoader
 
-from pi_optimal.models.base_model import BaseModel
+from pi_optimal.models.sklearn.base_sklearn_model import BaseSklearnModel as BaseModel
 
 # --- Dummy estimator class used by our dummy model ---
 class DummyEstimator:
