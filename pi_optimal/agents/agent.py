@@ -4,6 +4,7 @@ from pi_optimal.planners.cem_continuous import CEMContinuousPlanner
 from pi_optimal.models.sklearn.random_forest_model import RandomForest
 from pi_optimal.models.sklearn.svm import SupportVectorMachine
 from pi_optimal.models.sklearn.mlp import NeuralNetwork
+from pi_optimal.models.sklearn.hybrid_model import HybridModel
 from pi_optimal.utils.serialization import (
     serialize_processors,
     deserialize_processors,
@@ -26,7 +27,8 @@ class Agent():
     MODEL_REGISTRY = {
     "NeuralNetwork": NeuralNetwork,
     "SupportVectorMachine": SupportVectorMachine, 
-    "RandomForest": RandomForest
+    "RandomForest": RandomForest,
+    "HybridModel": HybridModel
     }
 
     def __init__(self, name: str = "pi_optimal_agent"):                
@@ -89,7 +91,7 @@ class Agent():
         self.models = []
         for config in model_config:
             model_cls = self.MODEL_REGISTRY[config["model_type"]]
-            model = model_cls(**config.get("params", {}))
+            model = model_cls(params=config.get("params", {}))
             self.models.append(model)
 
         n_models = len(self.models)

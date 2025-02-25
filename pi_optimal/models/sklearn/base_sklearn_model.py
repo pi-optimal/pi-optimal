@@ -7,10 +7,6 @@ from pi_optimal.models.base_model import BaseModel
 
 class BaseSklearnModel(BaseModel):
     
-    def fit(self, dataset):
-        """Fits the model to the dataset."""
-        raise NotImplementedError
-
     def predict(self, X):
         X = np.array(X, dtype=np.float32)
 
@@ -73,7 +69,8 @@ class BaseSklearnModel(BaseModel):
         if data.get('model_type') != cls.__name__:
             raise ValueError(f"Model type mismatch: Expected {cls.__name__}, got {data.get('model_type')}")
             
-        instance = cls(**data["params"])
+        instance = cls(params=data["params"])
+
         instance.models = data["models"]
         instance.dataset_config = data["dataset_config"]
         if 'model_config' in data:
@@ -111,7 +108,7 @@ class BaseSklearnModel(BaseModel):
         self.dataset_config = dataloader.dataset.dataset_config
 
         self.models = [
-            self._create_estimator(self.dataset_config["states"][state_idx]["type"])
+            self._create_estimator(self.dataset_config["states"], state_idx)
             for state_idx in self.dataset_config["states"]
         ]
 

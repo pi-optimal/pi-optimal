@@ -10,7 +10,9 @@ class LinearModel(BaseSklearnModel):
         self.models = []
         self.dataset_config = None
 
-    def _create_estimator(self, feature_type):
+    def _create_estimator(self, state_configs, state_idx):
+        state_config = state_configs[state_idx]
+        feature_type = state_config["type"]
         if feature_type == "numerical":
             return LinearRegression(**self.params)
         elif feature_type in ["categorial", "binary"]:
