@@ -34,7 +34,7 @@ class DummyModel(BaseModel):
     def __init__(self, **kwargs):
         self.params = kwargs
 
-    def _create_estimator(self, feature_type):
+    def _create_estimator(self, feature_type, state_index):
         if feature_type == "reward":
             return DummyEstimator(20)
         else:
