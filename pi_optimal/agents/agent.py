@@ -91,7 +91,10 @@ class Agent():
         self.models = []
         for config in model_config:
             model_cls = self.MODEL_REGISTRY[config["model_type"]]
-            model = model_cls(params=config.get("params", {}))
+            if config["model_type"] == "HybridModel":
+                model = model_cls(params=config.get("params", {}))
+            else:
+                model = model_cls(**config.get("params", {}))
             self.models.append(model)
 
         n_models = len(self.models)
