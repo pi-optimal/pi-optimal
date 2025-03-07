@@ -28,6 +28,7 @@ class TimeseriesDataset(BaseDataset):
         min_episode_length (int): Minimum length of episodes in the dataset.
         max_episode_length (int): Maximum length of episodes in the dataset.
         median_episode_length (float): Median length of episodes in the dataset.
+        use_padding (bool): Whether to use padding to ensure consistent dimensions.
     """
 
     def __init__(
@@ -44,6 +45,7 @@ class TimeseriesDataset(BaseDataset):
         train_processors: bool = True,
         is_inference: bool = False,
         noise_intensity_on_past_states: float = 0.0,
+        use_padding = True,
     ):
         """
         Initialize the TimeseriesDataset.
@@ -74,6 +76,7 @@ class TimeseriesDataset(BaseDataset):
         self.forecast_timesteps = forecast_timesteps
 
         self.reward_column = reward_column
+        self.use_padding = use_padding
 
         self.logger.info(f"Dataset has {len(self.df)} rows and {len(self.df.columns)} columns.", "INFO", indent_level=1)
         self.logger.info(f"Dataset has {self.df[self.dataset_config['episode_column']].nunique()} episodes.", "INFO", indent_level=1)
@@ -356,14 +359,13 @@ class TimeseriesDataset(BaseDataset):
         return np.asarray(inverse_transformed)
 
     def __getitem__(
-        self, index: int, use_padding: bool = True
+        self, index: int
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
         Get a single item from the dataset.
 
         Args:
             index (int): Index of the item to retrieve.
-            use_padding (bool, optional): Whether to pad the data if necessary. Defaults to True.
 
         Returns:
             Tuple containing past states, past actions, future states, and future actions.
@@ -374,7 +376,7 @@ class TimeseriesDataset(BaseDataset):
         past_data = self._get_past_data(index, episode_start_index)
         future_data = self._get_future_data(index, episode_end_index, past_data)
 
-        if use_padding:
+        if self.use_padding:
             past_data, future_data = self._pad_data(past_data, future_data)
 
         # Add noise to the past states
@@ -462,7 +464,7 @@ class TimeseriesDataset(BaseDataset):
         future_data = self._pad_future_data(future_data)
         return past_data, future_data
 
-    def _pad_past_data(self, past_data: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
+    def _pad_past_data(self, past_data: Dict[str, np.ndarray], pad_value: int = -3) -> Dict[str, np.ndarray]:
         """
         Pad the past data to ensure consistent dimensions.
 
@@ -475,15 +477,15 @@ class TimeseriesDataset(BaseDataset):
         if len(past_data["states"]) < self.lookback_timesteps:
             pad_width = self.lookback_timesteps - len(past_data["states"])
             past_data["states"] = np.pad(
-                past_data["states"], ((pad_width, 0), (0, 0)), mode="constant"
+                past_data["states"], ((pad_width, 0), (0, 0)), mode="constant", constant_values=pad_value,
             )
             past_data["actions"] = np.pad(
-                past_data["actions"], ((pad_width, 0), (0, 0)), mode="constant"
+                past_data["actions"], ((pad_width, 0), (0, 0)), mode="constant", constant_values=pad_value,
             )
         return past_data
 
     def _pad_future_data(
-        self, future_data: Dict[str, np.ndarray]
+        self, future_data: Dict[str, np.ndarray], pad_value: int = -3
     ) -> Dict[str, np.ndarray]:
         """
         Pad the future data to ensure consistent dimensions.
@@ -497,10 +499,10 @@ class TimeseriesDataset(BaseDataset):
         if len(future_data["states"]) < self.forecast_timesteps:
             pad_width = self.forecast_timesteps - len(future_data["states"])
             future_data["states"] = np.pad(
-                future_data["states"], ((0, pad_width), (0, 0)), mode="constant"
+                future_data["states"], ((0, pad_width), (0, 0)), mode="constant", constant_values=pad_value,
             )
             future_data["actions"] = np.pad(
-                future_data["actions"], ((0, pad_width), (0, 0)), mode="constant"
+                future_data["actions"], ((0, pad_width), (0, 0)), mode="constant", constant_values=pad_value,
             )
         return future_data
 

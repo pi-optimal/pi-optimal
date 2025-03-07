@@ -1,7 +1,7 @@
-from .base_model import BaseModel
+from .base_sklearn_model import BaseSklearnModel
 from sklearn.svm import SVR, SVC
 
-class SupportVectorMachine(BaseModel):
+class SupportVectorMachine(BaseSklearnModel):
     def __init__(
         self,
         kernel='rbf',
@@ -22,7 +22,9 @@ class SupportVectorMachine(BaseModel):
         self.models = []
         self.dataset_config = None
 
-    def _create_estimator(self, feature_type):
+    def _create_estimator(self, state_configs, state_idx):
+        state_config = state_configs[state_idx]
+        feature_type = state_config["type"]
         if feature_type == "numerical":
             return SVR(**self.params)
         elif feature_type in ["categorial", "binary"]:

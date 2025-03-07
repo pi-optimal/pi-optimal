@@ -1,8 +1,8 @@
-from .base_model import BaseModel
+from .base_sklearn_model import BaseSklearnModel
 from sklearn.neural_network import MLPRegressor, MLPClassifier
 
 
-class NeuralNetwork(BaseModel):
+class NeuralNetwork(BaseSklearnModel):
     def __init__(
         self,
         hidden_layer_sizes=(100,),
@@ -31,7 +31,9 @@ class NeuralNetwork(BaseModel):
         self.models = []
         self.dataset_config = None
 
-    def _create_estimator(self, feature_type):
+    def _create_estimator(self, state_configs, state_idx):
+        state_config = state_configs[state_idx]
+        feature_type = state_config["type"]
         if feature_type == "numerical":
             return MLPRegressor(**self.params)
         elif feature_type in ["categorial", "binary"]:

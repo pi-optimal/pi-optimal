@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 from torch.utils.data import Dataset, DataLoader
 
-from pi_optimal.models.base_model import BaseModel
+from pi_optimal.models.sklearn.base_sklearn_model import BaseSklearnModel as BaseModel
 
 # --- Dummy estimator class used by our dummy model ---
 class DummyEstimator:
@@ -34,7 +34,7 @@ class DummyModel(BaseModel):
     def __init__(self, **kwargs):
         self.params = kwargs
 
-    def _create_estimator(self, feature_type):
+    def _create_estimator(self, feature_type, state_index):
         if feature_type == "reward":
             return DummyEstimator(20)
         else:

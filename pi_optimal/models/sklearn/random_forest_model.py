@@ -1,8 +1,8 @@
-from .base_model import BaseModel
+from .base_sklearn_model import BaseSklearnModel
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 
 
-class RandomForest(BaseModel):
+class RandomForest(BaseSklearnModel):
     def __init__(
         self,
         n_estimators=100,
@@ -27,7 +27,9 @@ class RandomForest(BaseModel):
         self.models = []
         self.dataset_config = None
 
-    def _create_estimator(self, feature_type):
+    def _create_estimator(self, state_configs, state_idx):
+        state_config = state_configs[state_idx]
+        feature_type = state_config["type"]
         if feature_type == "numerical":
             return RandomForestRegressor(**self.params)
         elif feature_type in ["categorial", "binary"]:
