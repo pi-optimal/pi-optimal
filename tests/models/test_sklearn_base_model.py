@@ -31,8 +31,12 @@ class DummyEstimator:
 
 # --- Dummy model subclass ---
 class DummyModel(BaseModel):
-    def __init__(self, **kwargs):
-        self.params = kwargs
+    def __init__(self, params: dict = {},):
+        self.params = params
+        self.use_past_states_for_reward = params.get("use_past_states_for_reward", True)
+        self.params.pop("use_past_states_for_reward", None)
+        self.models = []
+        self.dataset_config = None
 
     def _create_estimator(self, feature_type, state_index):
         if feature_type == "reward":
@@ -224,7 +228,6 @@ def test_save_and_load(tmp_path):
     dummy_model = DummyModel(params={"dummy": "value"})
     dummy_model.dataset_config = dataset_config
     dummy_model.models = [DummyEstimator(10), DummyEstimator(20)]
-    dummy_model.params = {"dummy": "value"}
     dummy_model.model_config = {"config": "test"}
     filepath = str(tmp_path / "model.pkl")
     dummy_model.save(filepath)
