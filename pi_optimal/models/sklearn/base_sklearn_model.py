@@ -13,13 +13,14 @@ class BaseSklearnModel(BaseModel):
         Parameters:
             use_past_states_for_reward (bool): Determines the input used for reward prediction.
                 - False: Use only the predicted next state (non-reward part).
-                - True:  Use a concatenation of the past input X and the predicted next state.
+                - True:  Use a concatenation of the past states and actions 
+                         and the predicted next state to predict the reward.
                 Defaults to False.
             Other parameters may be passed via **params.
         """
         super().__init__(**params)
         self.params = params
-        self.use_past_states_for_reward = params.get("use_past_states_for_reward", False)
+        self.use_past_states_for_reward = params.get("use_past_states_for_reward", True)
       
     def fit(self, dataset):
         """Fits the model to the dataset."""
