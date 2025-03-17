@@ -15,12 +15,11 @@ class BaseSklearnModel(BaseModel):
                 - False: Use only the predicted next state (non-reward part).
                 - True:  Use a concatenation of the past states and actions 
                          and the predicted next state to predict the reward.
-                Defaults to False.
+                Defaults to True.
             Other parameters may be passed via **params.
         """
         super().__init__(**params)
         self.params = params
-        self.use_past_states_for_reward = params.get("use_past_states_for_reward", True)
       
     def fit(self, dataset):
         """Fits the model to the dataset."""
@@ -96,7 +95,7 @@ class BaseSklearnModel(BaseModel):
         if data.get('model_type') != cls.__name__:
             raise ValueError(f"Model type mismatch: Expected {cls.__name__}, got {data.get('model_type')}")
             
-        instance = cls(**data["params"])
+        instance = cls(params=data["params"])
         instance.models = data["models"]
         instance.dataset_config = data["dataset_config"]
         if 'model_config' in data:
@@ -126,7 +125,7 @@ class BaseSklearnModel(BaseModel):
             dataset, batch_size=len(dataset), shuffle=False, num_workers=0
         )
         past_states, past_actions, future_states, _ = next(iter(dataloader))
-        states = self._prepare_input_data(past_states, past_actions)
+        past_states_actions = self._prepare_input_data(past_states, past_actions)
         next_states = self._prepare_target_data(future_states)
 
         self.dataset_config = dataloader.dataset.dataset_config
@@ -140,7 +139,7 @@ class BaseSklearnModel(BaseModel):
         for i, model in enumerate(tqdm(self.models, desc="Training models...")):
             if i != self.dataset_config["reward_feature_idx"]:
                 next_state_target = self._get_target_for_feature(next_states, i)
-                model.fit(states, next_state_target)
+                model.fit(past_states_actions, next_state_target)
             else:
                 reward_idx = self.dataset_config["reward_vector_idx"]
                 target_reward = self._get_target_for_feature(next_states, i)
@@ -149,7 +148,7 @@ class BaseSklearnModel(BaseModel):
 
                 if self.use_past_states_for_reward:
                     # Concatenate the past input with the next state without reward to predict the reward.
-                    states_w_next_states_wo_reward = np.concatenate([states, next_state_wo_reward], axis=1)
+                    states_w_next_states_wo_reward = np.concatenate([past_states_actions, next_state_wo_reward], axis=1)
                     model.fit(states_w_next_states_wo_reward, target_reward)
                 else:
                     model.fit(next_state_wo_reward, target_reward)

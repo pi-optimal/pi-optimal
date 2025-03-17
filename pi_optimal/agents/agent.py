@@ -92,10 +92,7 @@ class Agent():
         self.models = []
         for config in model_config:
             model_cls = self.MODEL_REGISTRY[config["model_type"]]
-            if config["model_type"] == "HybridModel":
-                model = model_cls(params=config.get("params", {}))
-            else:
-                model = model_cls(**config.get("params", {}))
+            model = model_cls(params=config.get("params", {}))
             self.models.append(model)
 
         # Split the dataset into n_models

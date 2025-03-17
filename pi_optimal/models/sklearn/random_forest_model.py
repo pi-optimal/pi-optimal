@@ -5,29 +5,22 @@ from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 class RandomForest(BaseSklearnModel):
     def __init__(
         self,
-        n_estimators=100,
-        max_depth=None,
-        min_samples_split=2,
-        min_samples_leaf=1,
-        max_leaf_nodes=None,
-        random_state=None,
-        n_jobs=None,
-        verbose=0,
+        params: dict = {},
     ):
-        self.params = {
-            "n_estimators": n_estimators,
-            "max_depth": max_depth,
-            "min_samples_split": min_samples_split,
-            "min_samples_leaf": min_samples_leaf,
-            "max_leaf_nodes": max_leaf_nodes,
-            "random_state": random_state,
-            "n_jobs": n_jobs,
-            "verbose": verbose,
-        }
+        """ Random Forest class that uses the underlying sklearn RandomForestRegressor or RandomForestClassifier. Check the"
+        documentation of RandomForestRegressor and RandomForestClassifier for the available parameters 
+        (https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html).
+        """
+        self.params = params
+        self.use_past_states_for_reward = params.get("use_past_states_for_reward", True)
+        self.params.pop("use_past_states_for_reward", None)
         self.models = []
         self.dataset_config = None
 
     def _create_estimator(self, state_configs, state_idx):
+        """
+        Create an estimator for the given state index and append it to self.models.
+        """
         state_config = state_configs[state_idx]
         feature_type = state_config["type"]
         if feature_type == "numerical":

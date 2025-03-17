@@ -7,10 +7,14 @@ from typing import Dict, Any
 
 class HybridModel(BaseSklearnModel):
     def __init__(self, params: dict):
+    
         if not HybridModel._validate_hybrid_params(params):
             raise ValueError("Invalid configuration for hybrid model.")
         
         self.params = params
+        self.use_past_states_for_reward = params.get("use_past_states_for_reward", True)
+        self.params.pop("use_past_states_for_reward", None)
+        
         self.models = []
         self.dataset_config = None
 

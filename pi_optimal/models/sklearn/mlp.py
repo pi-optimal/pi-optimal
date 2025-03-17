@@ -5,33 +5,23 @@ from sklearn.neural_network import MLPRegressor, MLPClassifier
 class NeuralNetwork(BaseSklearnModel):
     def __init__(
         self,
-        hidden_layer_sizes=(100,),
-        activation='relu',
-        solver='adam',
-        alpha=0.0001,
-        batch_size='auto',
-        learning_rate='constant',
-        learning_rate_init=0.001,
-        max_iter=200,
-        random_state=None,
-        verbose=0,
+        params: dict = {},
     ):
-        self.params = {
-            "hidden_layer_sizes": hidden_layer_sizes,
-            "activation": activation,
-            "solver": solver,
-            "alpha": alpha,
-            "batch_size": batch_size,
-            "learning_rate": learning_rate,
-            "learning_rate_init": learning_rate_init,
-            "max_iter": max_iter,
-            "random_state": random_state,
-            "verbose": verbose,
-        }
+        """ Neural Network class that uses the underlying sklearn MLPRegressor or MLPClassifier. Check the
+            documentation of MLPRegressor and MLPClassifier for the available parameters 
+            (https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPRegressor.html).
+        """
+        self.params = params
+        self.use_past_states_for_reward = params.get("use_past_states_for_reward", True)
+        self.params.pop("use_past_states_for_reward", None)
+        
         self.models = []
         self.dataset_config = None
 
     def _create_estimator(self, state_configs, state_idx):
+        """
+        Create an estimator for the given state index and append it to self.models.
+        """
         state_config = state_configs[state_idx]
         feature_type = state_config["type"]
         if feature_type == "numerical":
@@ -40,3 +30,4 @@ class NeuralNetwork(BaseSklearnModel):
             return MLPClassifier(**self.params)
         else:
             raise ValueError(f"Unknown feature type: {feature_type}")
+    

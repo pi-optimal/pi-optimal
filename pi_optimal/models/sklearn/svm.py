@@ -4,21 +4,15 @@ from sklearn.svm import SVR, SVC
 class SupportVectorMachine(BaseSklearnModel):
     def __init__(
         self,
-        kernel='rbf',
-        C=1.0,
-        gamma='scale',
-        tol=1e-3,
-        max_iter=-1,
-        verbose=0,
+        params: dict = {},
     ):
-        self.params = {
-            "kernel": kernel,
-            "C": C,
-            "gamma": gamma,
-            "tol": tol,
-            "max_iter": max_iter,
-            "verbose": verbose,
-        }
+        """ Support Vector Machine class that uses the underlying sklearn SVR or SVC. Check the
+            documentation of SVR and SVC for the available parameters 
+            (https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html).
+        """
+        self.params = params
+        self.use_past_states_for_reward = params.get("use_past_states_for_reward", True)
+        self.params.pop("use_past_states_for_reward", None)
         self.models = []
         self.dataset_config = None
 
