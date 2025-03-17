@@ -48,6 +48,12 @@ class BaseEvaluator:
             "categorial": ["accuracy", "f1_weighted", "f1_macro", "f1_micro"],
         }
 
+        # Validate dataset configuration
+        if sorted(self.dataset_config["states"].keys()) != list(range(len(self.dataset_config["states"]))):
+            raise ValueError("States indices should start from 0 and be continuous.")
+        if sorted(self.dataset_config["actions"].keys()) != list(range(len(self.dataset_config["actions"]))):
+            raise ValueError("Actions indices should start from 0 and be continuous.")
+
         # Initialize evaluation metrics
         for idx, item in self.dataset_config["states"].items():
             data_type: str = item["type"]
