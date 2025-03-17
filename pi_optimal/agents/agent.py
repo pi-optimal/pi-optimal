@@ -7,9 +7,7 @@ from pi_optimal.models.sklearn.random_forest_model import RandomForest
 from pi_optimal.models.sklearn.svm import SupportVectorMachine
 from pi_optimal.models.sklearn.mlp import NeuralNetwork
 from pi_optimal.models.sklearn.hybrid_model import HybridModel
-from pi_optimal.models.pytorch.mlp_model import MLPModel as TorchMLPModel
-from pi_optimal.models.pytorch.lstm_model import LSTMModel as TorchLSTMModel
-from pi_optimal.models.pytorch.ad_pilot_model import AdPilotModel as TorchAdPilotModel
+
 from pi_optimal.utils.serialization import (
     serialize_processors,
     deserialize_processors,
@@ -34,10 +32,7 @@ class Agent():
         "NeuralNetwork": NeuralNetwork,
         "SupportVectorMachine": SupportVectorMachine, 
         "RandomForest": RandomForest,
-        "HybridModel": HybridModel,
-        "TorchMLPModel": TorchMLPModel,
-        "TorchLSTMModel": TorchLSTMModel,
-        "TorchAdPilotModel": TorchAdPilotModel
+        "HybridModel": HybridModel
     }
 
     def __init__(self, name: str = "pi_optimal_agent"):                
