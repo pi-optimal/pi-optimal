@@ -1,0 +1,112 @@
+name: Bug Report
+description: Report a bug or unexpected behavior
+labels: [bug]
+
+body:
+- type: markdown
+  attributes:
+    value: >
+      #### Before submitting a bug, please make sure the issue hasn't been already
+      addressed by searching through [the past issues](https://github.com/pi-optimal/pi-optimal/issues)
+      and updating your pi-optimal version by running `pip install pi-optimal --upgrade`.
+- type: textarea
+  attributes:
+    label: Describe the bug
+    description: >
+      A clear and concise description of what the bug is.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Steps/Code to Reproduce
+    description: |
+      Please add a minimal code example that can reproduce the error when running it. Be as succinct as possible, **do not depend on external data files**: instead you can generate synthetic data or provide a simple example. Example:
+
+      ```
+      import pandas as pd
+      import numpy as np
+      from pi_optimal.agents.agent import Agent
+      from pi_optimal.datasets.timeseries_dataset import TimeseriesDataset
+
+      # Generate synthetic time series data
+      dates = pd.date_range(start='2023-01-01', periods=100, freq='D')
+      data = {
+          'timestamp': dates,
+          'temperature': np.random.normal(20, 5, 100),
+          'humidity': np.random.normal(50, 10, 100),
+          'heater_power': np.random.uniform(0, 1, 100),
+          'comfort_score': np.random.normal(7, 2, 100),
+          'room_id': ['1'] * 100
+      }
+      df = pd.DataFrame(data)
+      
+      # Prepare dataset
+      climate_dataset = TimeseriesDataset(
+          df,
+          state_columns=['temperature', 'humidity'],
+          action_columns=['heater_power'],
+          reward_column='comfort_score',
+          timestep_column='timestamp',
+          unit_index='room_id',
+          lookback_timesteps=8
+      )
+      
+      # Train agent
+      climate_agent = Agent()
+      climate_agent.train(dataset=climate_dataset)
+      ```
+
+      If the code is too long, feel free to put it in a public gist and link it in the issue: https://gist.github.com.
+
+      In short, **we are going to copy-paste your code** to run it and we expect to get the same result as you.
+    placeholder: |
+      ```
+      Sample code to reproduce the problem
+      ```
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Expected Results
+    description: >
+      Please paste or describe the expected results.
+    placeholder: >
+      Example: Agent successfully trains and can make predictions.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Actual Results
+    description: |
+      Please paste or describe the results you observe instead of the expected results. If you observe an error, please paste the error message including the **full traceback** of the exception. For example:
+
+      ```
+      ---------------------------------------------------------------------------
+      Traceback (most recent call last):
+        File "example.py", line 25, in <module>
+          climate_agent.train(dataset=climate_dataset)
+        File "/usr/local/lib/python3.8/site-packages/pi_optimal/agents/agent.py", line 45, in train
+          self._validate_dataset(dataset)
+        File "/usr/local/lib/python3.8/site-packages/pi_optimal/agents/agent.py", line 78, in _validate_dataset
+          raise ValueError("Dataset must contain at least one action column")
+      ValueError: Dataset must contain at least one action column
+      ```
+    placeholder: >
+      Please paste or specifically describe the actual output or traceback.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Environment Information
+    description: |
+      Please provide the following information:
+      - OS: [e.g. Windows 10, macOS 12.1]
+      - Python version: [e.g. 3.8.10]
+      - pi_optimal version: [e.g. 0.1.0]
+      - Any relevant package versions
+  validations:
+    required: true
+- type: markdown
+  attributes:
+    value: >
+      Thanks for contributing 🎉!
