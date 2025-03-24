@@ -1,0 +1,51 @@
+name: Feature Request
+description: Suggest a new feature or enhancement
+labels: [feature]
+
+body:
+- type: markdown
+  attributes:
+    value: >
+      #### Before submitting a feature request, please make sure the feature hasn't been already
+      addressed by searching through [the past issues](https://github.com/pi-optimal/pi-optimal/issues).
+- type: textarea
+  attributes:
+    label: Problem Statement
+    description: >
+      A clear description of the problem this feature would solve. Example: "I'm always frustrated when..."
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Proposed Solution
+    description: >
+      A clear description of what you want to happen. If you have ideas about the model design or implementation, include them here.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Alternatives Considered
+    description: >
+      A description of any alternative solutions or features you've considered.
+  validations:
+    required: false
+- type: textarea
+  attributes:
+    label: Additional Context
+    description: >
+      Add any other context, code examples, or references to existing implementations about the feature request here.
+  validations:
+    required: false
+- type: dropdown
+  attributes:
+    label: Impact
+    description: How would you rate the impact of this feature for you?
+    options:
+      - Critical (Blocking work)
+      - High (Major improvement)
+      - Medium (Significant enhancement)
+      - Low (Nice to have)
+- type: markdown
+  attributes:
+    value: >
+      Thanks for contributing 🎉!
