@@ -47,6 +47,14 @@ class Logger:
     MAX_LOG_MESSAGES = 100  # Optional: Limit the number of stored log messages
 
     INDENT_STEP = 20  # Pixels per indentation level
+    
+    LEVEL_MAP = {
+        'DEBUG': logging.DEBUG,
+        'INFO': logging.INFO,
+        'WARNING': logging.WARNING,
+        'ERROR': logging.ERROR,
+        'CRITICAL': logging.CRITICAL
+    }
 
     def __init__(self, name: str, level: int = logging.INFO):
         """
@@ -81,22 +89,12 @@ class Logger:
     def _setup_logger(self):
         """Configure logger based on the detected environment."""
         if self._is_notebook():
-            # Notebook environment - use HTML display
+            # Notebook environment - set up for HTML display but don't create it yet
             try:
                 from IPython.display import display, HTML, DisplayHandle
-                self.display_handle = Logger._display_handles.get(self.name)
-                if self.display_handle is None:
-                    # Create a new display area if not already present
-                    initial_html = self._generate_initial_html()
-                    self.display_handle = display(HTML(initial_html), display_id=True)
-                    Logger._display_handles[self.name] = self.display_handle
+                # Just configure the display function, without creating the display
+                self.display_handle = None  # Will be created on first log
                 self._display_func = self._notebook_display
-
-                # Apply CSS only once per logger name
-                if self.name not in Logger._css_applied:
-                    self._apply_css()
-                    Logger._css_applied.add(self.name)
-
             except ImportError:
                 # Fallback to terminal logging if IPython isn't available
                 self._setup_terminal_logger()
@@ -223,8 +221,30 @@ class Logger:
 
     def _notebook_display(self, level: str, msg: str, emoji_key: Optional[str] = None, indent_level: int = 0):
         """Append log message to the display area in the notebook with indentation and visual connectors."""
-        from IPython.display import HTML
+        from IPython.display import display, HTML
 
+
+        # Create display handle only on first log message
+        if self.display_handle is None:
+            # Check if a shared display already exists for this logger name
+            self.display_handle = Logger._display_handles.get(self.name)
+            
+            if self.display_handle is None:
+                # Create a new display area if not already present
+                initial_html = self._generate_initial_html()
+                self.display_handle = display(HTML(initial_html), display_id=True)
+                Logger._display_handles[self.name] = self.display_handle
+                
+                # Apply CSS when creating the first display
+                if self.name not in Logger._css_applied:
+                    self._apply_css()
+                    Logger._css_applied.add(self.name)
+        
+
+        # Only proceed if the message level is sufficient
+        if self.LEVEL_MAP.get(level, 0) < self.level:
+            return
+        
         self.log_messages.append((level, msg, emoji_key, indent_level))
         
         # Optional: Limit the number of stored log messages
@@ -258,7 +278,8 @@ class Logger:
             emoji_key: The key to retrieve the corresponding emoji.
             indent_level: The indentation level for the message.
         """
-        self._display_func('DEBUG', msg, emoji_key, indent_level)
+        if self.level <= logging.DEBUG:
+            self._display_func('DEBUG', msg, emoji_key, indent_level)
 
     def info(self, msg: str, emoji_key: Optional[str] = 'INFO', indent_level: int = 0):
         """
@@ -269,7 +290,9 @@ class Logger:
             emoji_key: The key to retrieve the corresponding emoji.
             indent_level: The indentation level for the message.
         """
-        self._display_func('INFO', msg, emoji_key, indent_level)
+        if self.level <= logging.INFO:
+            self._display_func('INFO', msg, emoji_key, indent_level)
+
 
     def warning(self, msg: str, emoji_key: Optional[str] = 'WARNING', indent_level: int = 0):
         """
@@ -280,7 +303,8 @@ class Logger:
             emoji_key: The key to retrieve the corresponding emoji.
             indent_level: The indentation level for the message.
         """
-        self._display_func('WARNING', msg, emoji_key, indent_level)
+        if self.level <= logging.WARNING:
+            self._display_func('WARNING', msg, emoji_key, indent_level)
 
     def error(self, msg: str, emoji_key: Optional[str] = 'ERROR', indent_level: int = 0):
         """
@@ -291,7 +315,8 @@ class Logger:
             emoji_key: The key to retrieve the corresponding emoji.
             indent_level: The indentation level for the message.
         """
-        self._display_func('ERROR', msg, emoji_key, indent_level)
+        if self.level <= logging.ERROR:
+            self._display_func('ERROR', msg, emoji_key, indent_level)
 
     def critical(self, msg: str, emoji_key: Optional[str] = 'CRITICAL', indent_level: int = 0):
         """
@@ -302,19 +327,5 @@ class Logger:
             emoji_key: The key to retrieve the corresponding emoji.
             indent_level: The indentation level for the message.
         """
-        self._display_func('CRITICAL', msg, emoji_key, indent_level)
-
-
-class TqdmLoggingHandler(logging.Handler):
-    """Custom logging handler that uses tqdm.write to prevent progress bar disruption."""
-    def __init__(self, level=logging.NOTSET):
-        super().__init__(level)
-    
-    def emit(self, record):
-        try:
-            msg = self.format(record)
-            from tqdm import tqdm
-            tqdm.write(msg)
-            self.flush()
-        except Exception:
-            self.handleError(record)
+        if self.level <= logging.CRITICAL:
+            self._display_func('CRITICAL', msg, emoji_key, indent_level)
