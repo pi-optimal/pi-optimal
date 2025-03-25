@@ -104,8 +104,8 @@ class ModelBasedEnv(gym.Env):
         inf_dataset = TimeseriesDataset(df=self.df, dataset_config=self.dataset_config, train_processors=False, is_inference=True, verbose=False)
 
         state_input, action_input, _, _ = inf_dataset[len(self.df)-1]
-        state_input = state_input.reshape(1, -1)
-        action_input = action_input.reshape(1, -1)
+        state_input = np.expand_dims(state_input, axis=0)
+        action_input = np.expand_dims(action_input, axis=0)
 
         # Use a randomly selected model to predict the next full state.
         model_idx = np.random.randint(0, len(self.models))
@@ -113,7 +113,8 @@ class ModelBasedEnv(gym.Env):
         next_state_pred = self.dataset.inverse_transform_features("states", next_state_pred)[0]
         reward = next_state_pred[self.reward_idx]
         done = next_state_pred[self.done_idx]
-
+        self.last_reward, self.last_done = reward, done
+        
         observation = next_state_pred[self.state_idx]
         self.observation = observation
         self.current_step += 1
