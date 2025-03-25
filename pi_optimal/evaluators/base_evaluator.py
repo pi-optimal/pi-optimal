@@ -48,6 +48,12 @@ class BaseEvaluator:
             "categorial": ["accuracy", "f1_weighted", "f1_macro", "f1_micro"],
         }
 
+        # Validate dataset configuration
+        if sorted(self.dataset_config["states"].keys()) != list(range(len(self.dataset_config["states"]))):
+            raise ValueError("States indices should start from 0 and be continuous.")
+        if sorted(self.dataset_config["actions"].keys()) != list(range(len(self.dataset_config["actions"]))):
+            raise ValueError("Actions indices should start from 0 and be continuous.")
+
         # Initialize evaluation metrics
         for idx, item in self.dataset_config["states"].items():
             data_type: str = item["type"]
@@ -143,11 +149,15 @@ class BaseEvaluator:
 
         next_states_hat = model.forward_n_steps(initial_state, actions, n_steps=n_rollout_steps)
 
+        transformed_next_states = np.zeros((1, n_rollout_steps, 1, len(dataset.dataset_config["states"])))
+        transformed_next_states_hat = np.zeros((1, n_rollout_steps, 1, len(dataset.dataset_config["states"])))
+        
         if backtransform:
             for step in range(n_rollout_steps):
-                next_states[:,step,0,:] = dataset.inverse_transform_features("states", next_states[:,step,0,:])
-                next_states_hat[:,step,0,:] = dataset.inverse_transform_features("states", next_states_hat[:,step,0,:])
-            
+                transformed_next_states[:,step,0,:] = dataset.inverse_transform_features("states", next_states[:,step,0,:])
+                transformed_next_states_hat[:,step,0,:] = dataset.inverse_transform_features("states", next_states_hat[:,step,0,:])
+            next_states = transformed_next_states
+            next_states_hat = transformed_next_states_hat
         return next_states, next_states_hat
     
     def _evaluate_dataset_rollout(self, next_states_per_rollout: List[List[np.ndarray]], next_states_hat_per_rollout: List[List[np.ndarray]]) -> Dict[int, Dict[str, float]]:
@@ -262,8 +272,8 @@ class BaseEvaluator:
 
         evaluation: Dict[str, Dict[str, Any]] = {}
         for idx, item in self.dataset_config["states"].items():
-            feature_begin_idx: int = item["feature_begin_idx"]
-            feature_end_idx: int = item["feature_end_idx"]
+            feature_begin_idx: int = idx
+            feature_end_idx: int = idx + 1
             data_type: str = item["type"]
             evaluation_metric: str = item["evaluation_metric"]
 
@@ -312,7 +322,7 @@ class BaseEvaluator:
         elif data_type in ["binary", "categorial"]:
             y_pred_classes = y_pred
             if metric == "accuracy":
-                return float(accuracy_score(y_true, y_pred_classes))
+                return (y_pred == y_true).mean()
             elif metric.startswith("f1_"):
                 if metric == "f1_binary" and data_type == "binary":
                     return float(f1_score(y_true, y_pred_classes, average='binary', zero_division=0))
