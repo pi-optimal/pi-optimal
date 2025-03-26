@@ -1,0 +1,42 @@
+name: Question
+description: Ask a question about using pi_optimal
+labels: [question]
+
+body:
+- type: markdown
+  attributes:
+    value: >
+      #### Before asking a question, please make sure it hasn't been already
+      addressed by searching through [the past issues](https://github.com/pi-optimal/pi-optimal/issues)
+      and checking the [documentation](https://pi-optimal.com/docs/getting-started).
+- type: textarea
+  attributes:
+    label: Question
+    description: >
+      Your question about using pi_optimal. Please be as specific as possible.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Context
+    description: |
+      Any relevant context that would help us understand your question better. This could include:
+      - Code snippets you're working with
+      - What you're trying to achieve
+      - Your specific use case
+  validations:
+    required: false
+- type: textarea
+  attributes:
+    label: Environment Information
+    description: |
+      If relevant, please provide:
+      - OS: [e.g. Windows 10, macOS 12.1]
+      - Python version: [e.g. 3.8.10]
+      - pi_optimal version: [e.g. 0.1.0]
+  validations:
+    required: false
+- type: markdown
+  attributes:
+    value: >
+      Thanks for contributing 🎉!
