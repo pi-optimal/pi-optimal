@@ -329,3 +329,17 @@ class Logger:
         """
         if self.level <= logging.CRITICAL:
             self._display_func('CRITICAL', msg, emoji_key, indent_level)
+
+class TqdmLoggingHandler(logging.Handler):
+    """Custom logging handler that uses tqdm.write to prevent progress bar disruption."""
+    def __init__(self, level=logging.NOTSET):
+        super().__init__(level)
+    
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            from tqdm import tqdm
+            tqdm.write(msg)
+            self.flush()
+        except Exception:
+            self.handleError(record)
