@@ -296,69 +296,6 @@ class TimeseriesDataset(BaseDataset):
             transformed = transformed.toarray()
         return np.asarray(transformed)
 
-
-    def _transform_features(self, feature_type: str, transformed_data: np.ndarray) -> np.ndarray:
-        """
-        Transform features of a specific type (states or actions) using their associated processors.
-
-        Args:
-            feature_type (str): Type of features to inverse transform ('states' or 'actions').
-            transformed_data (np.ndarray): The transformed data to be inverse transformed.
-
-        Returns:
-            np.ndarray: Inverse transformed features.
-
-        Raises:
-            AssertionError: If feature_type is not 'states' or 'actions'.
-        """
-        assert feature_type in [
-            "states",
-            "actions",
-        ], "Feature type must be 'states' or 'actions'"
-
-        inverse_transformed_features = []
-        
-        for feature_idx in self.dataset_config[feature_type]:
-            feature = self.dataset_config[feature_type][feature_idx]
-            begin_idx = feature_idx
-            end_idx = feature_idx + 1
-            feature_data = transformed_data[:, begin_idx:end_idx]
-            inverse_transformed = self._transform_single_feature_with_data(feature, feature_data)
-            
-            if inverse_transformed.ndim == 1:
-                inverse_transformed = inverse_transformed.reshape(-1, 1)
-            
-            inverse_transformed_features.append(inverse_transformed)
-
-        return np.hstack(inverse_transformed_features)
-    
-
-    def _transform_single_feature_with_data(self, feature: Dict[str, Any], feature_data: np.ndarray) -> np.ndarray:
-        """
-        Inverse transform a single feature using its associated processor.
-
-        Args:
-            feature (Dict[str, Any]): Feature configuration dictionary.
-            feature_data (np.ndarray): Transformed feature data to be inverse transformed.
-
-        Returns:
-            np.ndarray: Inverse transformed feature.
-        """
-        processor = feature.get("processor")
-
-        if feature.get("type") == "categorial" or feature.get("type") == "binary":
-            feature_data = feature_data.astype(int)
-
-        if processor is not None and hasattr(processor, 'inverse_transform'):
-            inverse_transformed = processor.transform(feature_data)
-        else:
-            inverse_transformed = feature_data
-
-        if hasattr(inverse_transformed, "toarray"):  # For sparse matrices
-            inverse_transformed = inverse_transformed.toarray()
-        
-        return np.asarray(inverse_transformed)
-    
     def inverse_transform_features(self, feature_type: str, transformed_data: np.ndarray) -> np.ndarray:
         """
         Inverse transform features of a specific type (states or actions) using their associated processors.

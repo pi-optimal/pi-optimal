@@ -50,7 +50,6 @@ class BaseSklearnModel(BaseModel):
         
         # Insert the predicted reward back into the next state array at the configured position
         next_state = np.insert(next_state_pred, reward_idx, reward, axis=1)
-        
         return next_state
 
     def forward(self, state, action):
@@ -62,7 +61,6 @@ class BaseSklearnModel(BaseModel):
         assert inital_state.shape[0] == actions.shape[0]
         assert actions.shape[1] == n_steps
          
-
         state = inital_state
         next_states = []
         for i in range(n_steps):
@@ -71,7 +69,6 @@ class BaseSklearnModel(BaseModel):
             next_states.append([next_state])
             state = np.roll(state, -1, axis=1)
             state[:, -1] = next_state
-
         next_states = np.array(next_states)
         next_states = np.transpose(next_states, (2, 0, 1, 3))
         return next_states
@@ -85,7 +82,7 @@ class BaseSklearnModel(BaseModel):
             "model_type": self.__class__.__name__,
             "model_config": getattr(self, 'model_config', None)
         }
-
+            
         with open(filepath, 'wb') as f:
             pickle.dump(save_data, f, protocol=pickle.HIGHEST_PROTOCOL)
 
@@ -120,7 +117,6 @@ class BaseSklearnModel(BaseModel):
         feature_begin_idx = feature["feature_begin_idx"]
         feature_end_idx = feature["feature_end_idx"]
         return y[:, feature_begin_idx:feature_end_idx].ravel()
-
 
     def fit(self, dataset):
         self.dataset_config = dataset.dataset_config

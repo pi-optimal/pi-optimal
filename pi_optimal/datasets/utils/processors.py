@@ -22,7 +22,7 @@ class ProcessorRegistry:
         "RobustScaler": (RobustScaler, ["numerical"]),
         "QuantileTransformer": (QuantileTransformer, ["numerical"]),
         "PowerTransformer": (PowerTransformer, ["numerical"]),
-        "OneHotEncoder": (OneHotEncoder, ["categorial", "binary"]),
+        "OneHotEncoder": (OneHotEncoder, ["categorial"]),
         "OrdinalEncoder": (OrdinalEncoder, ["categorial"]),
         "LabelEncoder": (LabelEncoder, ["categorial"]),
         "KBinsDiscretizer": (KBinsDiscretizer, ["numerical"]),
