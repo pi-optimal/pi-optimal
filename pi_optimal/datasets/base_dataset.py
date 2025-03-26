@@ -4,6 +4,7 @@ import numpy as np
 from torch.utils.data import Dataset
 from typing import Dict, Any, List, Optional
 from pi_optimal.utils.logger import Logger
+import logging
 
 class BaseDataset(Dataset):
     """Base class for all datasets.
@@ -21,7 +22,7 @@ class BaseDataset(Dataset):
         num_episodes (int): The number of episodes in the dataset.
     """
 
-    def __init__(self, df: pd.DataFrame, dataset_config: Dict[str, Any] = None, unit_index: str = None, timestep_column: str = None, reward_column: str = None, state_columns: List[str] = None, action_columns: List[str] = None):
+    def __init__(self, df: pd.DataFrame, dataset_config: Dict[str, Any] = None, unit_index: str = None, timestep_column: str = None, reward_column: str = None, state_columns: List[str] = None, action_columns: List[str] = None, verbose: bool = True):
         """Initialize the BaseDataset.
 
         Args:
@@ -32,7 +33,11 @@ class BaseDataset(Dataset):
             AssertionError: If any of the input validations fail.
         """
         self.hash_id = np.random.randint(0, 100000)
-        self.logger = Logger(f"Dataset-{self.hash_id}")
+  
+        if verbose:
+            self.logger = Logger(f"Dataset-{self.hash_id}", level=logging.INFO)
+        else:
+            self.logger = Logger(f"Dataset-{self.hash_id}", level=logging.ERROR)
         self.logger.info("Initializing new dataset...", "PROCESS")
         self.df = df.copy()
         self.dataset_config = dataset_config

@@ -45,6 +45,7 @@ class TimeseriesDataset(BaseDataset):
         train_processors: bool = True,
         is_inference: bool = False,
         noise_intensity_on_past_states: float = 0.0,
+        verbose: bool = True
         use_padding = True,
     ):
         """
@@ -59,7 +60,7 @@ class TimeseriesDataset(BaseDataset):
             is_inference (bool, optional): Whether the dataset is used for inference. Defaults to False.
             noise_intensity_on_past_states (float, optional): Intensity of noise to add to past states. Defaults to 0.0.
         """
-        super().__init__(df, dataset_config, unit_index, timestep_column, reward_column, state_columns, action_columns)
+        super().__init__(df, dataset_config, unit_index, timestep_column, reward_column, state_columns, action_columns, verbose)
         
                 
         # Add timeseries specific attributes to dataset_config
