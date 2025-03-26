@@ -9,6 +9,12 @@
     <a href="https://pypi.org/project/pi-optimal/">
         <img alt="PyPI - Version" src="https://img.shields.io/pypi/v/pi_optimal">
     </a>
+    <a href="https://github.com/pi-optimal/pi-optimal/actions/workflows/tests.yml">
+        <img alt="Tests" src="https://github.com/pi-optimal/pi-optimal/actions/workflows/tests.yml/badge.svg">
+    </a>
+    <a href="https://discord.gg/dYjDmjanQf">
+        <img alt="Discord" src="https://img.shields.io/badge/Discord-Join%20Server-%235865F2.svg">
+    </a>
 </p>
 
 <p align="center">
