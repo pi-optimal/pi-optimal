@@ -45,7 +45,7 @@ class TimeseriesDataset(BaseDataset):
         train_processors: bool = True,
         is_inference: bool = False,
         noise_intensity_on_past_states: float = 0.0,
-        verbose: bool = True
+        verbose: bool = True,
         use_padding = True,
     ):
         """
