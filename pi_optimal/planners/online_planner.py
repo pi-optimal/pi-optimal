@@ -57,8 +57,16 @@ class OnlinePlanner(BasePlanner):
         self.model.learn(callback=self.eval_callback, **train_params)
 
         if log_dir is not None:
-            self.logger.info("Loading best model and set as planner model")
-            self.model = PPO.load(os.path.join(log_dir, 'best_model/best_model.zip'))
+            best_model_path = os.path.join(log_dir, 'best_model')
+            best_model_file = best_model_path + '.zip'
+            if os.path.exists(best_model_file):
+                self.logger.info("Loading best model and setting as planner model")
+                self.model = PPO.load(best_model_path)
+            else:
+                self.logger.info("Best model not found. Saving final model as backup.")
+                final_model_path = os.path.join(log_dir, 'final_model')
+                self.model.save(final_model_path)
+                self.model = PPO.load(final_model_path)
 
     def plan(self, inf_dataset):
 
