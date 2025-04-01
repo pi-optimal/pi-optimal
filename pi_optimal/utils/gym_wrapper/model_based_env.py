@@ -16,9 +16,11 @@ class ModelBasedEnv(gym.Env):
         self, 
         models: List[Any], 
         dataset: Any,
-        max_episode_steps: int = 200
+        max_episode_steps: int = 200,
+        use_start_states: bool = False
     ) -> None:
         super().__init__()
+        self.use_start_states = use_start_states
         self.models = models
         self.dataset = dataset
         self.dataset_config: Dict = dataset.dataset_config
@@ -125,12 +127,15 @@ class ModelBasedEnv(gym.Env):
 
         return observation, reward, done, done, {}
 
-    def reset(self, seed: Optional[int] = None, options: Optional[Dict] = None, use_start_states: bool = False) -> Tuple[Dict[str, Any], Dict]:
+    def reset(self, seed: Optional[int] = None, options: Optional[Dict] = None) -> Tuple[Dict[str, Any], Dict]:
         
         self.total_steps = 0
-        if use_start_states:
+        if self.use_start_states:
             episode_start_index = self.dataset.episode_start_index
             start_index = np.random.choice(episode_start_index)
+            start_index += np.random.randint(0, 20)
+            start_index = min(start_index, len(self.dataset.df)-1)
+
         else:
             start_index = np.random.randint(0, len(self.dataset.df))
 
