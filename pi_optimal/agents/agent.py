@@ -41,8 +41,8 @@ class Agent():
 
         self.hash_id = np.random.randint(0, 100000)
         self.logger = Logger(f"Agent-{self.hash_id}")
-        self.logger.info(f"Agent of type {type} initialized.", "SUCCESS")
-        
+        self.logger.info(f"Agent of type {type} initialized with name '{self.name}'.", "SUCCESS")        
+
     def _init_constrains(self, dataset, constraints):
         min_values = []
         max_values = []
@@ -66,7 +66,7 @@ class Agent():
         self.type = dataset.action_type
 
         self.logger_training = Logger(f"Agent-Training-{self.hash_id}-{np.random.randint(0, 100000)}")
-        self.logger_training.info(f"Training agent of type {self.type}", "PROCESS")
+        self.logger_training.info(f"Training agent '{self.name}' of type {self.type}", "PROCESS")
 
         if self.type == "mpc-discrete":
             self.policy = CEMDiscretePlanner(action_dim=dataset.actions.shape[1])
@@ -108,7 +108,7 @@ class Agent():
             self.models[i].fit(current_subset)
 
         self.status = "Trained"
-        self.logger_training.info(f"The agent of type {self.type} has been trained.", "SUCCESS")
+        self.logger_training.info(f"The agent '{self.name}' of type {self.type} has been trained.", "SUCCESS")
 
     def objective_function(self, traj):
         reward_idx = self.dataset_config['reward_vector_idx']
@@ -165,21 +165,24 @@ class Agent():
 
     def save(self, path='agents/'):
         """Save the agent configuration and models."""
-        validate_path(path)
+        
         if self.status != "Trained":
             self.logger.error("Agent must be trained before saving.")
             raise Exception("Agent must be trained before saving.")
         
-        agent_path = f"{path}/{self.name}"
+        agent_path = path + '/' + self.name
         if not os.path.exists(agent_path):
             os.makedirs(agent_path)
-            os.makedirs(f"{agent_path}/models")
+        
+        models_dir = f"{agent_path}/models"
+        if not os.path.exists(models_dir):
+            os.makedirs(models_dir)
 
         models_config = []
         if hasattr(self, 'models') and self.models:
             for i, model in enumerate(self.models):
                 model_filename = f"model_{i}.pkl"
-                model_path = f"{agent_path}/models/{model_filename}"
+                model_path = f"{models_dir}/{model_filename}" 
                 model.save(model_path)
                 models_config.append({
                     "model_type": model.__class__.__name__,
@@ -187,29 +190,27 @@ class Agent():
                 })
         
         config = {
-            'name': self.name,
+            'name': self.name, 
             'type': self.type,
             'status': self.status,            
             'version': '0.1',
             'created_at': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            'dataset_config': serialize_processors(self.dataset_config.copy(), agent_path),
+            'dataset_config': serialize_processors(self.dataset_config.copy(), agent_path), 
             'models_config': models_config
         }
         
-        with open(f"{agent_path}/agent_config.json", "w") as f:
+        # Save config file directly in agent_path
+        with open(f"{agent_path}/agent_config.json", "w") as f: 
             json.dump(config, f, indent=4, cls=NumpyEncoder)
 
         if hasattr(self, 'policy'):
+             # Save policy config file directly in agent_path
             with open(f"{agent_path}/policy_config.json", "w") as f:
                 policy_config = {
                     'type': self.policy.__class__.__name__,
                     'params': serialize_policy_dict(self.policy.__dict__)
                 }
                 json.dump(policy_config, f, indent=4, cls=NumpyEncoder)
-
-        if hasattr(self, 'models') and self.models:
-            for i, model in enumerate(self.models):
-                model.save(f"{agent_path}/models/model_{i}.pkl")
 
     @classmethod 
     def load(cls, path: str):
