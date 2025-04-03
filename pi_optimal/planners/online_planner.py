@@ -17,7 +17,7 @@ class OnlinePlanner(BasePlanner):
                  eval_env: gym.Env = None, 
                  log_dir: str=None, 
                  logger: Logger=None, 
-                 planner_params: dict={"verbose": 1}, 
+                 model_params: dict={"n_steps": 2048, "gamma": 0.99, "n_epochs": 10, "clip_range": 0.999, "verbose": 1}, 
                  eval_params: dict={"eval_freq": 5000, "n_eval_episodes": 50, "deterministic": False, "render": False},
                  train_params: dict={"total_timesteps": 300000}):
         self.env = env
@@ -50,7 +50,7 @@ class OnlinePlanner(BasePlanner):
             
 
         self.logger.info("Creating PPO model")
-        self.model = PPO("MlpPolicy", env, **planner_params)
+        self.model = PPO("MlpPolicy", env, **model_params)
 
 
         self.logger.info("Training model")
