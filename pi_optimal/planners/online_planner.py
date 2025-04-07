@@ -37,7 +37,7 @@ class OnlinePlanner(BasePlanner):
                 self.logger.info("Creating eval callback with logging")
                 self.eval_callback = EvalCallback(
                     eval_env,
-                    best_model_save_path=os.path.join(log_dir, 'best_model'),
+                    best_model_save_path=log_dir,
                     log_path=log_dir,
                     **eval_params
                 )
@@ -57,13 +57,12 @@ class OnlinePlanner(BasePlanner):
         self.model.learn(callback=self.eval_callback, **train_params)
 
         if log_dir is not None:
-            best_model_path = os.path.join(log_dir, 'best_model')
-            best_model_file = best_model_path + '.zip'
+            best_model_file = os.path.join(log_dir, 'best_model.zip')
             if os.path.exists(best_model_file):
                 self.logger.info("Loading best model and setting as planner model")
-                self.model = PPO.load(best_model_path)
+                self.model = PPO.load(os.path.join(log_dir, 'best_model'))
             else:
-                self.logger.info("Best model not found. Saving final model as backup.")
+                self.logger.info("Best model not found. Saving final model as backup.")                
                 final_model_path = os.path.join(log_dir, 'final_model')
                 self.model.save(final_model_path)
                 self.model = PPO.load(final_model_path)
