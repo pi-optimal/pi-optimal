@@ -196,17 +196,6 @@ If you want to contribute to `pi_optimal`, we recommend using [Poetry](https://p
     poetry install
     ```
 
-**Note on PyTorch Versions**:
-
-By default, pi_optimal installs the CPU-only version of PyTorch (pytorch-cpu).
-If you'd like to use a CUDA-enabled (GPU) version of PyTorch, simply run:
-
-```bash
-poetry remove torch
-poetry add torch@^2.3
-```
-This ensures you have the correct version of PyTorch for your system's GPU acceleration.
-
 **Next Steps: Running Notebooks**
 
 Once the installation is complete, you can open any notebook from the [notebooks](./notebooks) directory. When launching Jupyter, select the virtual environment created by Poetry (it should appear with a name similar to `pi-optimal-xyz-py3.10`).
