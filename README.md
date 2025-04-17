@@ -9,6 +9,12 @@
     <a href="https://pypi.org/project/pi-optimal/">
         <img alt="PyPI - Version" src="https://img.shields.io/pypi/v/pi_optimal">
     </a>
+    <a href="https://github.com/pi-optimal/pi-optimal/actions/workflows/tests.yml">
+        <img alt="Tests" src="https://github.com/pi-optimal/pi-optimal/actions/workflows/tests.yml/badge.svg">
+    </a>
+    <a href="https://discord.com/invite/dYjDmjanQf">
+        <img alt="Discord" src="https://img.shields.io/badge/Discord-Join%20Server-%235865F2.svg">
+    </a>
 </p>
 
 <p align="center">
@@ -17,7 +23,7 @@
         •
         <a href="https://pi-optimal.com/docs/getting-started">Docs</a>
         •
-        <a href="https://join.slack.com/t/pioptimal/shared_invite/zt-2w4z32qtt-Q7EdDvmSi9vWFCPb22_qVA">Community Slack</a>
+        <a href="https://discord.com/invite/dYjDmjanQf">Community Discord</a>
     </strong>
 </p>
 
@@ -34,7 +40,7 @@ Built for data scientists, RL practitioners, and developers, `pi_optimal`:
 - Integrates easily with **custom reward functions**, empowering you to tailor the agent’s objectives to your business goals.
 - Facilitates **multi-step planning**, allowing you to look ahead and optimize future outcomes, not just the immediate next step.
 
-If you find `pi_optimal` useful, consider joining our [community Slack](https://join.slack.com/t/pioptimal/shared_invite/zt-2w4z32qtt-Q7EdDvmSi9vWFCPb22_qVA) and give us a ⭐ on GitHub!
+If you find `pi_optimal` useful, consider joining our [community](https://discord.com/invite/dYjDmjanQf) and give us a ⭐ on GitHub!
 
 ---
 
@@ -152,7 +158,7 @@ We welcome contributions from the community! If you have feature requests, bug r
 
 - Open an issue on [GitHub Issues](https://github.com/pi-optimal/pi-optimal/issues).
 - Submit a pull request with your proposed changes.
-- Join our [Slack community](https://join.slack.com/t/pioptimal/shared_invite/zt-2w4z32qtt-Q7EdDvmSi9vWFCPb22_qVA) to ask questions, share ideas, or get help.
+- Join our [Discord community](https://discord.com/invite/dYjDmjanQf) to ask questions, share ideas, or get help.
 
 A big thanks to all contributors who make `pi_optimal` better every day!
 
@@ -160,7 +166,7 @@ A big thanks to all contributors who make `pi_optimal` better every day!
 
 # 🙋 Get Help
 
-If you have questions or need assistance, the fastest way to get answers is via our [community Slack channel](https://join.slack.com/t/pioptimal/shared_invite/zt-2w4z32qtt-Q7EdDvmSi9vWFCPb22_qVA). Drop by and say hello!
+If you have questions or need assistance, the fastest way to get answers is via our [Discord channel](https://discord.com/invite/dYjDmjanQf). Drop by and say hello!
 
 ---
 
@@ -190,13 +196,33 @@ If you want to contribute to `pi_optimal`, we recommend using [Poetry](https://p
     poetry install
     ```
 
-Once the installation is complete, you can open any notebook from the [notebooks](./notebooks) directory. When running Jupyter, select the virtual environment created by Poetry (it should appear with a name similar to `pi-optimal-xyz-py3.10`).
+**Note on PyTorch Versions**:
 
-Happy coding!
+By default, pi_optimal installs the CPU-only version of PyTorch (pytorch-cpu).
+If you'd like to use a CUDA-enabled (GPU) version of PyTorch, simply run:
+
+```bash
+poetry remove torch
+poetry add torch@^2.3
+```
+This ensures you have the correct version of PyTorch for your system's GPU acceleration.
+
+**Next Steps: Running Notebooks**
+
+Once the installation is complete, you can open any notebook from the [notebooks](./notebooks) directory. When launching Jupyter, select the virtual environment created by Poetry (it should appear with a name similar to `pi-optimal-xyz-py3.10`).
+
+If you don’t see this environment, you might need to run:
+```bash
+poetry run ipython kernel install --user --name=pi-optimal
+```
+This command will register your new environment as an option in Jupyter.
+
+Now you’re all set—ready to code! 🚀
+
 
 # 🌱 Roadmap
 
-We will publish our roadmap in the upcoming weeks. Have suggestions or would like to see a new feature prioritized? Let us know in our Slack or open an issue.
+We will publish our roadmap in the upcoming weeks. Have suggestions or would like to see a new feature prioritized? Let us know in our Discord or open an issue.
 
 ---
 

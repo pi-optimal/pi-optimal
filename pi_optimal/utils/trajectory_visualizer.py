@@ -276,11 +276,11 @@ class TrajectoryVisualizer:
             actions=simulation_actions
         )
         # Backtransform the predicted states
+        transformed_predicted_trajectories = []
         for i in range(len(self.predicted_trajectories)):
-            self.predicted_trajectories[i][0] = self.backtransform(
-                self.predicted_trajectories[i][0],
-                self.current_dataset.dataset_config["states"]
-            )
+            transformed_predicted_trajectories.append(self.current_dataset.inverse_transform_features("states", self.predicted_trajectories[i][0]))
+        
+        self.predicted_trajectories = transformed_predicted_trajectories
         self.logger.info("Trajectories resimulated successfully.", "SUCCESS")
 
     def _on_update_button_clicked(self, b):
@@ -295,7 +295,7 @@ class TrajectoryVisualizer:
             state_type = self.state_info[self.state_dropdown.value]["type"]
             # For numerical states, we store standard deviation as uncertainty
             if state_type == "numerical":
-                state_uncertainty = np.array(self.predicted_trajectories).std(axis=0)[0][:, state_idx]
+                state_uncertainty =  np.array(self.predicted_trajectories)[:, :, state_idx].astype(float).std(axis=0)
             else:
                 # For discrete/binary states, we won't store "uncertainty" in the same sense.
                 # But we keep an empty array or None. You can store something else if you want.
@@ -537,8 +537,9 @@ class TrajectoryVisualizer:
                 uncertainty = saved['uncertainty']
                 label = saved['label']
                 color = self._get_color(label)
+            
 
-                state_estimates = np.array(traj).mean(axis=0)[0][:, state_idx]
+                state_estimates = np.array(traj)[:, :, state_idx].astype(float).mean(axis=0)
                 # Insert historical last state in front so that line connects smoothly
                 state_estimates = np.concatenate([[self.historical_states[-2, state_idx]], state_estimates])
                 state_estimates = state_estimates.round(self.round_digits)
@@ -595,11 +596,11 @@ class TrajectoryVisualizer:
             # Plot the current (unsaved) trajectory
             label = 'Current Trajectory'
             color = self._get_color(label)
-            state_estimates = np.array(self.predicted_trajectories).mean(axis=0)[0][:, state_idx].copy()
-            state_uncertainty = np.array(self.predicted_trajectories).std(axis=0)[0][:, state_idx].copy()
+            state_estimates = np.array(self.predicted_trajectories)[:, :, state_idx].mean(axis=0).copy()
+            state_uncertainty =  np.array(self.predicted_trajectories)[:, :, state_idx].astype(float).std(axis=0)
 
             state_estimates = np.concatenate([[self.historical_states[-2, state_idx]], state_estimates])
-            state_estimates = state_estimates.round(self.round_digits)
+            state_estimates = state_estimates.astype(float).round(self.round_digits)
             state_uncertainty = np.concatenate([np.zeros(1), state_uncertainty])
 
             time_steps = np.arange(
@@ -753,12 +754,14 @@ class TrajectoryVisualizer:
     def backtransform(self, array: np.array, config_list: list) -> np.array:
         """ Backtransforms the array using the config list. """
         retransformed_array = array.copy()
+
         for i in range(len(config_list)):
             if config_list[i]["processor"] is not None:
                 if config_list[i]["type"] == "numerical":
                     feature_begin_idx = config_list[i]["feature_begin_idx"]
+                    feature_end_idx = config_list[i]["feature_end_idx"]
                     retransformed_array[:, feature_begin_idx] = config_list[i]["processor"].inverse_transform(
-                        retransformed_array[:, feature_begin_idx].reshape(-1, 1),
+                        retransformed_array[:, feature_begin_idx:feature_end_idx],
                         copy=False
                     ).reshape(-1)
                     

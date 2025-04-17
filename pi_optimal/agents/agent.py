@@ -1,9 +1,13 @@
+# pi_optimal/agents/agent.py
+
 from pi_optimal.datasets.base_dataset import BaseDataset
 from pi_optimal.planners.cem_discrete import CEMDiscretePlanner
 from pi_optimal.planners.cem_continuous import CEMContinuousPlanner
-from pi_optimal.models.random_forest_model import RandomForest
-from pi_optimal.models.svm import SupportVectorMachine
-from pi_optimal.models.mlp import NeuralNetwork
+from pi_optimal.models.sklearn.random_forest_model import RandomForest
+from pi_optimal.models.sklearn.svm import SupportVectorMachine
+from pi_optimal.models.sklearn.mlp import NeuralNetwork
+from pi_optimal.models.sklearn.hybrid_model import HybridModel
+
 from pi_optimal.utils.serialization import (
     serialize_processors,
     deserialize_processors,
@@ -23,10 +27,12 @@ from typing import List, Dict
 
 
 class Agent():
+    # The MODEL_REGISTRY now includes both scikit-learn models and the new PyTorch ones.
     MODEL_REGISTRY = {
-    "NeuralNetwork": NeuralNetwork,
-    "SupportVectorMachine": SupportVectorMachine, 
-    "RandomForest": RandomForest
+        "NeuralNetwork": NeuralNetwork,
+        "SupportVectorMachine": SupportVectorMachine, 
+        "RandomForest": RandomForest,
+        "HybridModel": HybridModel
     }
 
     def __init__(self, name: str = "pi_optimal_agent"):                
@@ -35,10 +41,9 @@ class Agent():
 
         self.hash_id = np.random.randint(0, 100000)
         self.logger = Logger(f"Agent-{self.hash_id}")
-        self.logger.info(f"Agent of type {type} initialized.", "SUCCESS")
-        
+        self.logger.info(f"Agent of type {type} initialized with name '{self.name}'.", "SUCCESS")        
+
     def _init_constrains(self, dataset, constraints):
-        
         min_values = []
         max_values = []
         for action_key in dataset.dataset_config["actions"]:
@@ -55,15 +60,13 @@ class Agent():
             max_values.append(transformed_max[0])
     
         constraints = {"min": np.array(min_values), "max": np.array(max_values)}
-
         return constraints
 
     def train(self, dataset: BaseDataset, constraints: dict = None, model_config: List[Dict] = None):
-        
         self.type = dataset.action_type
 
         self.logger_training = Logger(f"Agent-Training-{self.hash_id}-{np.random.randint(0, 100000)}")
-        self.logger_training.info(f"Training agent of type {self.type}", "PROCESS")
+        self.logger_training.info(f"Training agent '{self.name}' of type {self.type}", "PROCESS")
 
         if self.type == "mpc-discrete":
             self.policy = CEMDiscretePlanner(action_dim=dataset.actions.shape[1])
@@ -78,7 +81,7 @@ class Agent():
         self.dataset_config = dataset.dataset_config        
 
         if model_config is None:
-            # Default configuration
+            # Default configuration: by default, using two scikit-learn NeuralNetwork models.
             model_config = [
                 {"model_type": "NeuralNetwork", "params": {}},
                 {"model_type": "NeuralNetwork", "params": {}}
@@ -89,30 +92,23 @@ class Agent():
         self.models = []
         for config in model_config:
             model_cls = self.MODEL_REGISTRY[config["model_type"]]
-            model = model_cls(**config.get("params", {}))
+            model = model_cls(params=config.get("params", {}))
             self.models.append(model)
 
-        n_models = len(self.models)
-
         # Split the dataset into n_models
+        n_models = len(self.models)
         len_dataset = len(dataset)
         subset_size = len_dataset // n_models  # integer division
 
         for i in range(n_models):
-            # Compute start and end indices for this model's subset
             start_idx = i * subset_size
-            # For the last model, make sure we include all remaining data
             end_idx = (i + 1) * subset_size if i < n_models - 1 else len_dataset
-            
-            # Create a Subset of the dataset
             current_subset = Subset(dataset, range(start_idx, end_idx))
             current_subset.dataset_config = self.dataset_config
-            # Fit the model on this subset
             self.models[i].fit(current_subset)
 
         self.status = "Trained"
-        self.logger_training.info(f"The agent of type {self.type} has been trained.", "SUCCESS")
-
+        self.logger_training.info(f"The agent '{self.name}' of type {self.type} has been trained.", "SUCCESS")
 
     def objective_function(self, traj):
         reward_idx = self.dataset_config['reward_vector_idx']
@@ -154,54 +150,61 @@ class Agent():
                 for action_idx in dataset.dataset_config["actions"]:
                     action_config = dataset.dataset_config["actions"][action_idx]
                     if action_config["type"] == "categorial":
-                        transformed_actions.append(action_config["processor"].inverse_transform(actions[:, action_idx].round().astype(int).reshape(-1,1)).reshape(1, -1))
+                        transformed_actions.append(
+                            action_config["processor"]
+                            .inverse_transform(actions[:, action_idx].round().astype(int).reshape(-1, 1))
+                            .reshape(1, -1)
+                        )
                     else:
-                        transformed_actions.append(action_config["processor"].inverse_transform([actions[:, action_idx]]))
-                return np.array(transformed_actions)[: ,0].T
+                        transformed_actions.append(
+                            action_config["processor"].inverse_transform([actions[:, action_idx]])
+                        )
+                return np.array(transformed_actions)[:, 0].T
             
             return actions
 
-    def save(self, path = 'agents/'):
+    def save(self, path='agents/'):
         """Save the agent configuration and models."""
-        validate_path(path)
+        
         if self.status != "Trained":
             self.logger.error("Agent must be trained before saving.")
             raise Exception("Agent must be trained before saving.")
         
-        # Check if the directory exists
-        agent_path = f"{path}/{self.name}"
+        agent_path = path + '/' + self.name
         if not os.path.exists(agent_path):
             os.makedirs(agent_path)
-            os.makedirs(f"{agent_path}/models")
+        
+        models_dir = f"{agent_path}/models"
+        if not os.path.exists(models_dir):
+            os.makedirs(models_dir)
 
-        # Save models first and gather their configs (type and file name)
         models_config = []
         if hasattr(self, 'models') and self.models:
             for i, model in enumerate(self.models):
                 model_filename = f"model_{i}.pkl"
-                model_path = f"{agent_path}/models/{model_filename}"
+                model_path = f"{models_dir}/{model_filename}" 
                 model.save(model_path)
                 models_config.append({
                     "model_type": model.__class__.__name__,
                     "model_filename": model_filename
                 })
         
-        # Save agent configuration
         config = {
-            'name': self.name,
+            'name': self.name, 
             'type': self.type,
             'status': self.status,            
             'version': '0.1',
             'created_at': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            'dataset_config': serialize_processors(self.dataset_config.copy(), agent_path),
+            'dataset_config': serialize_processors(self.dataset_config.copy(), agent_path), 
             'models_config': models_config
         }
         
-        with open(f"{agent_path}/agent_config.json", "w") as f:
+        # Save config file directly in agent_path
+        with open(f"{agent_path}/agent_config.json", "w") as f: 
             json.dump(config, f, indent=4, cls=NumpyEncoder)
 
-        # Save policy if exists
         if hasattr(self, 'policy'):
+             # Save policy config file directly in agent_path
             with open(f"{agent_path}/policy_config.json", "w") as f:
                 policy_config = {
                     'type': self.policy.__class__.__name__,
@@ -209,44 +212,30 @@ class Agent():
                 }
                 json.dump(policy_config, f, indent=4, cls=NumpyEncoder)
 
-        # Save models if they exist
-        if hasattr(self, 'models') and self.models:
-            for i, model in enumerate(self.models):
-                model.save(f"{agent_path}/models/model_{i}.pkl")
-
     @classmethod 
     def load(cls, path: str):
         """Load an agent from saved configuration."""
-
         validate_agent_directory(path)
-
         with open(f"{path}/agent_config.json", "r") as f:
             config = json.load(f)
 
-        # Create agent instance
-        agent = cls(
-            name=config['name']
-        )
+        agent = cls(name=config['name'])
         agent.status = config['status']
-        # Restore dataset configuration with deserialized processors
         agent.dataset_config = deserialize_processors(config['dataset_config'], path)
 
-        # Load policy if exists
         if os.path.exists(f"{path}/policy_config.json"):
             with open(f"{path}/policy_config.json", "r") as f:
                 policy_config = json.load(f)
-                # Reconstruct policy based on type
                 if policy_config['type'] == "CEMDiscretePlanner":
                     agent.policy = CEMDiscretePlanner(action_dim=policy_config['params']['action_dim'])
                     agent.type = "mpc-discrete"
                 elif policy_config['type'] == "CEMContinuousPlanner":
-                    agent.policy = CEMContinuousPlanner(action_dim=policy_config, constraints=policy_config['params']['constraints'])
+                    agent.policy = CEMContinuousPlanner(action_dim=policy_config['params']['action_dim'],
+                                                        constraints=policy_config['params']['constraints'])
                     agent.type = "mpc-continuous"
-                # Restore policy parameters
                 for key, value in deserialize_policy_dict(policy_config['params']).items():
                     setattr(agent.policy, key, value)
 
-        # Load models using the saved models_config list
         agent.models = []
         models_config = config.get('models_config', [])
         for model_entry in models_config:
@@ -260,38 +249,29 @@ class Agent():
             agent.models.append(model)
 
         return agent
-    
 
     def _validate_models(self, model_config: list) -> None:
         """Validate model configuration structure and parameters."""
         required_keys = {"model_type", "params"}
-        
         for i, config in enumerate(model_config):
-            # Check required keys
             missing_keys = required_keys - config.keys()
             if missing_keys:
                 self.logger.error(f"Model config #{i+1} missing required keys: {missing_keys}")
                 raise ValueError(
                     f"Model config #{i+1} missing required keys: {missing_keys}"
                 )
-            
-            # Validate model type
             model_type = config["model_type"]
             if model_type not in self.MODEL_REGISTRY:
                 available_models = list(self.MODEL_REGISTRY.keys())
-                self.logger.error(f"Invalid model type '{model_type}' in config #{i+1}. ")
+                self.logger.error(f"Invalid model type '{model_type}' in config #{i+1}.")
                 raise ValueError(
                     f"Invalid model type '{model_type}' in config #{i+1}. "
                     f"Available models: {available_models}"
                 )
-            
-            # Validate parameters type
             if not isinstance(config["params"], dict):
                 self.logger.error(
-                    f"Parameters for model #{i+1} must be a dictionary, "
-                    f"got {type(config['params']).__name__}"
+                    f"Parameters for model #{i+1} must be a dictionary, got {type(config['params']).__name__}"
                 )
                 raise TypeError(
-                    f"Parameters for model #{i+1} must be a dictionary, "
-                    f"got {type(config['params']).__name__}"
-                    )
+                    f"Parameters for model #{i+1} must be a dictionary, got {type(config['params']).__name__}"
+                )

@@ -20,10 +20,10 @@ pandas = "^2.2.2"
 numpy = "^1.25.0"
 swig = "^4.3.0"
 jupyter = {version = "^1.0.0", optional = true}
-torch = { version = "^2.3", source = "pytorch-cpu", markers = "extra=='cpu' and extra!='cuda'" }
+torch = { version = "^2.3"}
 tqdm = "^4.66.4"
 scikit-learn = "^1.5.1"
-gymnasium = "^1.0.0"
+gymnasium = {extras = ["box2d"], version = "^1.0.0"}
 matplotlib = "^3.9.1.post1"
 ipywidgets = "^8.1.5"
 ipysheet= "^0.7.0"

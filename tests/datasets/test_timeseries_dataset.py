@@ -208,8 +208,8 @@ def test_get_timestep_from_all_episodes():
 
     past_states, past_actions, future_states, future_actions = ts_dataset.get_timestep_from_all_episodes(0)
     # Expect that the past state and actions are zeros
-    assert np.all(past_states == 0)
-    assert np.all(past_actions == 0)
+    assert np.all(past_states == -3)
+    assert np.all(past_actions == -3)
 
     past_states, past_actions, future_states, future_actions = ts_dataset.get_timestep_from_all_episodes(1)
     # With 2 episodes, we expect arrays of length 2.
@@ -247,9 +247,9 @@ def test_get_timestep_from_all_episodes_consistent_episodes(base_dataset_config)
     # For the very first timestep of every episode, no historical data is available.
     # The _pad_past_data method should add a full 2-row padding (of zeros).
     assert past_states.shape == (num_episodes, 2, ts_dataset.states.shape[1])
-    assert np.all(past_states == 0), "At timestep 0, past states must be padded with zeros."
+    assert np.all(past_states == -3), "At timestep 0, past states must be padded with -3."
     assert past_actions.shape == (num_episodes, 2, ts_dataset.actions.shape[1])
-    assert np.all(past_actions == 0), "At timestep 0, past actions must be padded with zeros."
+    assert np.all(past_actions == -3), "At timestep 0, past actions must be padded with -3."
     
     # For future data, since forecast_timesteps == 2, each episode should provide the first two actual rows.
     for ep in range(num_episodes):
@@ -271,10 +271,10 @@ def test_get_timestep_from_all_episodes_consistent_episodes(base_dataset_config)
         current_idx = ts_dataset.episode_start_index[ep] + 1
         # Without padding, the past data would be only one row (the one at global index 0).
         # After padding to 2 rows, we expect:
-        #   Row 0: zeros (padding)
+        #   Row 0: -3 (padding)
         #   Row 1: state at global index = episode_start_index (i.e. first actual row)
         expected_past = np.vstack([
-            np.zeros(ts_dataset.states.shape[1]),
+            np.zeros(ts_dataset.states.shape[1]) -3,
             ts_dataset.states[ts_dataset.episode_start_index[ep]]
         ])
         np.testing.assert_array_equal(past_states[ep], expected_past)
@@ -303,7 +303,7 @@ def test_get_timestep_from_all_episodes_consistent_episodes(base_dataset_config)
         # so the _pad_future_data function should add one row of zeros.
         expected_future = ts_dataset.states[current_idx: current_idx + 1]
         np.testing.assert_array_equal(future_states[ep, 0], expected_future[0])
-        np.testing.assert_array_equal(future_states[ep, 1], np.zeros(ts_dataset.states.shape[1]))
+        np.testing.assert_array_equal(future_states[ep, 1], np.zeros(ts_dataset.states.shape[1]) -3)
     
     # --- Test 4: Episodes with varying lengths ---
     # Create a new dataframe where the episodes have different numbers of timesteps.
@@ -380,7 +380,7 @@ def test_get_timestep_from_all_episodes_consistent_episodes(base_dataset_config)
         expected = ts_dataset.states[ts_dataset.episode_start_index[ep] + 1]
         # In inference mode, the padded past data is shifted so that the single available row is at the bottom.
         np.testing.assert_array_equal(past_states_inf[ep, 1], expected)
-        np.testing.assert_array_equal(past_states_inf[ep, 0], np.zeros(ts_dataset.states.shape[1]))
+        np.testing.assert_array_equal(past_states_inf[ep, 0], np.zeros(ts_dataset.states.shape[1]) -3)
 
 
 def test_get_timestep_from_all_episodes_dataframe_directly(base_dataset_config):
@@ -461,11 +461,11 @@ def test_get_timestep_from_all_episodes_dataframe_directly(base_dataset_config):
                 raw_past_states = ts_dataset.states[past_start:global_idx]
                 raw_past_actions = ts_dataset.actions[past_start:global_idx]
 
-                # If there are fewer than lookback_timesteps rows, pad on the top with zeros.
+                # If there are fewer than lookback_timesteps rows, pad on the top with -3.
                 num_missing = lookback_timesteps - raw_past_states.shape[0]
                 if num_missing > 0:
-                    pad_states = np.zeros((num_missing, ts_dataset.states.shape[1]))
-                    pad_actions = np.zeros((num_missing, ts_dataset.actions.shape[1]))
+                    pad_states = np.zeros((num_missing, ts_dataset.states.shape[1])) -3
+                    pad_actions = np.zeros((num_missing, ts_dataset.actions.shape[1])) -3
                     exp_past_states = np.vstack([pad_states, raw_past_states])
                     exp_past_actions = np.vstack([pad_actions, raw_past_actions])
                 else:
@@ -483,8 +483,8 @@ def test_get_timestep_from_all_episodes_dataframe_directly(base_dataset_config):
                 raw_future_actions = ts_dataset.actions[global_idx:future_end]
                 num_future_missing = forecast_timesteps - raw_future_states.shape[0]
                 if num_future_missing > 0:
-                    pad_future_states = np.zeros((num_future_missing, ts_dataset.states.shape[1]))
-                    pad_future_actions = np.zeros((num_future_missing, ts_dataset.actions.shape[1]))
+                    pad_future_states = np.zeros((num_future_missing, ts_dataset.states.shape[1])) -3
+                    pad_future_actions = np.zeros((num_future_missing, ts_dataset.actions.shape[1])) -3
                     exp_future_states = np.vstack([raw_future_states, pad_future_states])
                     exp_future_actions = np.vstack([raw_future_actions, pad_future_actions])
                 else:
