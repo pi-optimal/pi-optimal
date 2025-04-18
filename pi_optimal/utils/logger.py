@@ -223,7 +223,6 @@ class Logger:
         """Append log message to the display area in the notebook with indentation and visual connectors."""
         from IPython.display import display, HTML
 
-
         # Create display handle only on first log message
         if self.display_handle is None:
             # Check if a shared display already exists for this logger name
@@ -239,7 +238,6 @@ class Logger:
                 if self.name not in Logger._css_applied:
                     self._apply_css()
                     Logger._css_applied.add(self.name)
-        
 
         # Only proceed if the message level is sufficient
         if self.LEVEL_MAP.get(level, 0) < self.level:
@@ -329,3 +327,18 @@ class Logger:
         """
         if self.level <= logging.CRITICAL:
             self._display_func('CRITICAL', msg, emoji_key, indent_level)
+
+class TqdmLoggingHandler(logging.Handler):
+    """Custom logging handler that uses tqdm.write to prevent progress bar disruption."""
+    def __init__(self, level=logging.NOTSET):
+        super().__init__(level)
+    
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            from tqdm import tqdm
+            tqdm.write(msg)
+            self.flush()
+        except Exception:
+            self.handleError(record)
+

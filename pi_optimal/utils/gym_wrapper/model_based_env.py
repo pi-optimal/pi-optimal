@@ -69,7 +69,7 @@ class ModelBasedEnv(gym.Env):
         if all([t == "numerical" for t in types]):
             lows = []
             highs = []
-            for i in range(len(self.dataset_config["actions"])):
+            for i in range(self.action_dim):
                 low = self.dataset.actions[:, i].min()
                 high = self.dataset.actions[:, i].max()
                 lows.append(low)
@@ -135,6 +135,7 @@ class ModelBasedEnv(gym.Env):
             start_index = np.random.choice(episode_start_index)
             start_index += np.random.randint(0, 20)
             start_index = min(start_index, len(self.dataset.df)-1)
+
         else:
             start_index = np.random.randint(0, len(self.dataset.df))
 
