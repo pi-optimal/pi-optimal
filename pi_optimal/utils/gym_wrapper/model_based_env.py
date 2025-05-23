@@ -130,17 +130,24 @@ class ModelBasedEnv(gym.Env):
     def reset(self, seed: Optional[int] = None, options: Optional[Dict] = None) -> Tuple[Dict[str, Any], Dict]:
         
         self.total_steps = 0
-        if self.use_start_states:
-            episode_start_index = self.dataset.episode_start_index
-            start_index = np.random.choice(episode_start_index)
-            start_index += np.random.randint(0, 20)
-            start_index = min(start_index, len(self.dataset.df)-1)
 
+        if options and "start_index" in options:
+            start_index = options["start_index"]
         else:
-            start_index = np.random.randint(0, len(self.dataset.df))
+            if self.use_start_states:
+                episode_start_index = self.dataset.episode_start_index
+                start_index = np.random.choice(episode_start_index)
+                start_index += np.random.randint(0, 20)
+                start_index = min(start_index, len(self.dataset.df)-1)
+
+            else:
+                start_index = np.random.randint(0, len(self.dataset.df))
 
         selected_row = self.dataset.df.iloc[start_index]
         self.observation = selected_row[self.state_columns].values
+
+        print(f"Start index: {start_index}, Episode: {selected_row[self.dataset.dataset_config['episode_column']]}, Step: {selected_row[self.dataset.dataset_config['timestep_column']]}")
+        
         self.last_reward = selected_row[self.dataset.dataset_config["reward_column"]]
         self.last_done = selected_row["done"]
         self.current_step = selected_row[self.dataset.dataset_config["timestep_column"]]
