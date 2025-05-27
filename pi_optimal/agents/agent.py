@@ -7,6 +7,7 @@ from pi_optimal.models.sklearn.random_forest_model import RandomForest
 from pi_optimal.models.sklearn.svm import SupportVectorMachine
 from pi_optimal.models.sklearn.mlp import NeuralNetwork
 from pi_optimal.models.sklearn.hybrid_model import HybridModel
+from pi_optimal.models.sklearn.static_model import StaticModel
 
 from pi_optimal.utils.serialization import (
     serialize_processors,
@@ -32,7 +33,8 @@ class Agent():
         "NeuralNetwork": NeuralNetwork,
         "SupportVectorMachine": SupportVectorMachine, 
         "RandomForest": RandomForest,
-        "HybridModel": HybridModel
+        "HybridModel": HybridModel,
+        "StaticModel": StaticModel
     }
 
     def __init__(self, name: str = "pi_optimal_agent"):                
@@ -123,19 +125,41 @@ class Agent():
                 topk: int = 100,
                 uncertainty_weight: float = 0.5,
                 reset_planer: bool = True,
-                allow_sigma: bool = False):
+                allow_sigma: bool = False,
+                reward_function=None):
         self.logger_inference = Logger(f"Agent-Inference-{self.hash_id}-{np.random.randint(0, 100000)}")
         self.logger_inference.info(f"Searching for the optimal action sequence over a horizon of {horizon} steps.", "PROCESS")
         self.policy.logger = self.logger_inference
         
+        # Choose objective function based on whether reward_function is provided
+        if reward_function is not None:
+            # Fit the reward function if needed
+            if hasattr(reward_function, 'fit') and not reward_function.is_fitted:
+                reward_function.fit(dataset_config=self.dataset_config)
+            
+            # Create objective function that uses external reward function
+            def reward_function_objective(traj):
+                return -reward_function.calculate_trajectory_reward(traj)
+            
+            objective_func = reward_function_objective
+            self.logger_inference.info("Using external reward function for planning.", "INFO")
+        else:
+            objective_func = self.objective_function
+            self.logger_inference.info("Using model-predicted rewards for planning.", "INFO")
+        
         if self.type == "mpc-discrete" or self.type == "mpc-continuous":
             last_state, last_action, _, _ = dataset[len(dataset) - 1]
 
+            # Set reward function as an attribute on the policy object
+            if reward_function is not None:
+                self.policy.reward_function = reward_function
+            
+            # Call plan without passing reward_function parameter
             actions = self.policy.plan(
                 models=self.models,                  
                 starting_state=last_state,
                 action_history=last_action,
-                objective_function=self.objective_function,
+                objective_function=objective_func,
                 n_iter=n_iter,
                 horizon=horizon,
                 population_size=population_size,

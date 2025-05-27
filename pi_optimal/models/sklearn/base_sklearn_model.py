@@ -25,7 +25,7 @@ class BaseSklearnModel(BaseModel):
         """Fits the model to the dataset."""
         raise NotImplementedError
 
-    def predict(self, X):
+    def predict(self, X, skip_reward_prediction=False):
         X = np.array(X, dtype=np.float32)
 
         # Predict all features except the reward
@@ -37,6 +37,10 @@ class BaseSklearnModel(BaseModel):
         
         # Convert predictions into a (n_samples, n_features_without_reward) array
         next_state_pred = np.array(next_state_pred).T
+
+        if skip_reward_prediction:
+            # Return only non-reward state predictions
+            return next_state_pred
 
         if self.use_past_states_for_reward:
             # Concatenate the past input with the predicted next state to predict the reward.   
@@ -52,11 +56,53 @@ class BaseSklearnModel(BaseModel):
         next_state = np.insert(next_state_pred, reward_idx, reward, axis=1)
         return next_state
 
-    def forward(self, state, action):
+    def forward(self, state, action, skip_reward_prediction=False):
         X = self._prepare_input_data(state, action)
-        return self.predict(X)
+        return self.predict(X, skip_reward_prediction=skip_reward_prediction)
     
-    def forward_n_steps(self, inital_state, actions, n_steps, backtransform=True):
+    def forward_with_reward_function(self, state, action, reward_function):
+        """
+        Forward prediction using external reward function instead of model prediction.
+        
+        Args:
+            state: Current state
+            action: Action taken
+            reward_function: RewardFunction instance to calculate rewards
+            
+        Returns:
+            Next state with externally calculated rewards
+        """
+        # First predict next state using normal model prediction
+        X = self._prepare_input_data(state, action)
+        
+        # Get all predictions except reward
+        next_state_pred = []
+        for i, model in enumerate(self.models):
+            if i != self.dataset_config["reward_feature_idx"]:
+                feature_next_state = model.predict(X)
+                next_state_pred.append(feature_next_state)
+        
+        # Convert to array
+        next_state_pred = np.array(next_state_pred).T
+        
+        # Get reward index
+        reward_idx = self.dataset_config["reward_vector_idx"]
+        
+        # Calculate rewards with external function
+        rewards = []
+        for i in range(len(next_state_pred)):
+            # Get the predicted state and calculate reward
+            reward = reward_function.calculate_state_reward(next_state_pred[i])
+            rewards.append(reward)
+        
+        # Insert rewards at proper position
+        rewards = np.array(rewards)
+        next_state = np.insert(next_state_pred, reward_idx, rewards, axis=1)
+                
+        return next_state
+        
+    
+    def forward_n_steps(self, inital_state, actions, n_steps, backtransform=True, reward_function=None):
         assert n_steps > 0 
         assert inital_state.shape[0] == actions.shape[0]
         assert actions.shape[1] == n_steps
@@ -65,7 +111,10 @@ class BaseSklearnModel(BaseModel):
         next_states = []
         for i in range(n_steps):
             action = actions[:, i]
-            next_state = self.forward(state, action)
+            if reward_function is not None:
+                next_state = self.forward_with_reward_function(state, action, reward_function)
+            else:
+                next_state = self.forward(state, action)
             next_states.append([next_state])
             state = np.roll(state, -1, axis=1)
             state[:, -1] = next_state

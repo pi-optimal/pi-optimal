@@ -51,7 +51,8 @@ class CEMPlanner(BasePlanner):
              population_size: int = 1000, 
              topk: int = 100,
              uncertainty_weight: float = 0.5,
-             reset_planer: bool = True):
+             reset_planer: bool = True,
+             reward_function=None):
         
         self.validate_planing_params(n_iter, horizon, population_size, topk, uncertainty_weight)
 
@@ -61,6 +62,7 @@ class CEMPlanner(BasePlanner):
         self.topk = topk
         self.allow_sigma = allow_sigma
         self.uncertainty_weight = uncertainty_weight
+        self.reward_function = reward_function
 
         states = np.tile(starting_state, (population_size, 1, 1))  # (population_size, history_length, state_dim)
         action_history = np.tile(action_history, (population_size, 1, 1))  # (population_size, history_length, action_dim)

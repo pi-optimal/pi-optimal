@@ -37,7 +37,15 @@ class CEMDiscretePlanner(CEMPlanner):
             action_history[:, -1, :] = current_actions_one_hot
 
             for idx, model in enumerate(models):
-                next_states = model.forward(states, action_history)
+                if hasattr(self, 'reward_function') and self.reward_function is not None:
+                    # Use reward function instead of model reward prediction
+                    next_states = model.forward_with_reward_function(
+                        states, action_history, self.reward_function
+                    )
+                else:
+                    # Use normal model prediction including reward
+                    next_states = model.forward(states, action_history)
+                
                 model_predictions[idx].append(next_states)
 
             # Update states for next timestep (using the first model as reference)

@@ -36,7 +36,15 @@ class CEMContinuousPlanner(CEMPlanner):
             action_history[:, -1, :] = current_actions
 
             for idx, model in enumerate(models):
-                next_states = model.forward(states[idx], action_history)
+                if hasattr(self, 'reward_function') and self.reward_function is not None:
+                    # Use reward function instead of model reward prediction
+                    next_states = model.forward_with_reward_function(
+                        states[idx], action_history, self.reward_function
+                    )
+                else:
+                    # Use normal model prediction including reward
+                    next_states = model.forward(states[idx], action_history)
+                
                 model_predictions[idx].append(next_states)
 
                 # Update states for next timestep
@@ -58,10 +66,10 @@ class CEMContinuousPlanner(CEMPlanner):
     def get_action_sequence(self):
         return self.mu  # For continuous actions, the mean represents the optimal actions
     
-    def plan(self, models, starting_state, action_history, objective_function, n_iter = 10, allow_sigma = False, horizon = 4, population_size = 1000, topk = 100, uncertainty_weight = 0.5, reset_planer = True):
+    def plan(self, models, starting_state, action_history, objective_function, n_iter = 10, allow_sigma = False, horizon = 4, population_size = 1000, topk = 100, uncertainty_weight = 0.5, reset_planer = True, reward_function = None):
 
         if self.mu is None or reset_planer:
             self.mu = np.zeros((horizon, self.action_dim))
             self.sigma = np.ones((horizon, self.action_dim))
 
-        return super().plan(models, starting_state, action_history, objective_function, n_iter, allow_sigma, horizon, population_size, topk, uncertainty_weight, reset_planer)
+        return super().plan(models, starting_state, action_history, objective_function, n_iter, allow_sigma, horizon, population_size, topk, uncertainty_weight, reset_planer, reward_function)
