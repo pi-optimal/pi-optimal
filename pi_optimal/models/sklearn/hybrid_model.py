@@ -1,4 +1,5 @@
 from .base_sklearn_model import BaseSklearnModel
+from .static_model import StaticRegressor, StaticClassifier
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.neural_network import MLPRegressor, MLPClassifier
@@ -39,6 +40,7 @@ class HybridModel(BaseSklearnModel):
                 "rf": lambda p: RandomForestRegressor(**p),
                 "svm": lambda p: SVR(**p),
                 "linear": lambda p: LinearRegression(**p),
+                "static": lambda p: StaticRegressor(feature_idx=state_config["feature_begin_idx"]),
             }
         elif feature_type in ["categorial", "binary"]:
             estimators = {
@@ -46,6 +48,7 @@ class HybridModel(BaseSklearnModel):
                 "rf": lambda p: RandomForestClassifier(**p, class_weight="balanced"),
                 "svm": lambda p: SVC(**p, probability=True),
                 "linear": lambda p: LogisticRegression(**p, class_weight="balanced"),
+                "static": lambda p: StaticClassifier(feature_idx=state_config["feature_begin_idx"]),
             }
         else:
             raise ValueError(f"Unknown feature type: {feature_type}")
@@ -80,7 +83,7 @@ class HybridModel(BaseSklearnModel):
         if not isinstance(params, dict):
             raise ValueError("The configuration must be a dictionary.")
 
-        allowed_types = {"mlp", "rf", "svm", "linear"}
+        allowed_types = {"mlp", "rf", "svm", "linear", "static"}
 
         for key, value in params.items():
             if not isinstance(key, int):
