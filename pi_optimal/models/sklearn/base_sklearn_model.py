@@ -93,6 +93,24 @@ class BaseSklearnModel(BaseModel):
         for i in range(len(next_state_pred)):
             # Get the predicted state and calculate reward
             reward = reward_function.calculate_state_reward(next_state_pred[i])
+            
+            # Apply reward processor transformation if available
+            # The external reward function returns values in original space,
+            # but we need to transform them to match the model's expected scale
+            reward_feature_idx = self.dataset_config["reward_feature_idx"]
+            if reward_feature_idx in self.dataset_config["states"]:
+                reward_config = self.dataset_config["states"][reward_feature_idx]
+                if 'processor' in reward_config and reward_config['processor'] is not None:
+                    processor = reward_config['processor']
+                    if hasattr(processor, 'transform'):
+                        try:
+                            # Transform the reward value to match the processed scale
+                            scaled_reward = processor.transform([[reward]])[0][0]
+                            reward = scaled_reward
+                        except:
+                            # Fall back to original reward if transformation fails
+                            pass
+            
             rewards.append(reward)
         
         # Insert rewards at proper position
