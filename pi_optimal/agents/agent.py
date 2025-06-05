@@ -153,6 +153,8 @@ class Agent():
             # Set reward function as an attribute on the policy object
             if reward_function is not None:
                 self.policy.reward_function = reward_function
+            else:
+                self.policy.reward_function = None
             
             # Call plan without passing reward_function parameter
             actions = self.policy.plan(
@@ -165,7 +167,9 @@ class Agent():
                 population_size=population_size,
                 uncertainty_weight=uncertainty_weight,
                 reset_planer=reset_planer,
-                allow_sigma=allow_sigma)
+                allow_sigma=allow_sigma,
+                reward_function=reward_function
+            )
             
             self.logger_inference.info(f"Optimal action sequence found.", "SUCCESS")
 
