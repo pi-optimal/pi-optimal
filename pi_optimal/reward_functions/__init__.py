@@ -39,7 +39,7 @@ from .common_reward_functions import (
 )
 
 from .dataframe_reward_function import (
-    DataFrameRewardFunction
+    DataFrameRewardFunction,
 )
 
 __all__ = [
@@ -52,5 +52,5 @@ __all__ = [
     "CustomFunctionRewardFunction",
     "ActionPenaltyRewardFunction",
     "CompositeRewardFunction",
-    "DataFrameRewardFunction"
+    "DataFrameRewardFunction"    
 ]
