@@ -90,13 +90,23 @@ class StaticModel(BaseSklearnModel):
         state_config = state_configs[state_idx]
         feature_type = state_config["type"]
         
-        # Calculate the feature index in the input based on state configuration
+        # Calculate the correct input index for static models
+        # Static models need to extract from the most recent timestep in the flattened past_states
+        # feature_begin_idx is for output indexing, but input X has structure [flatten_past_states, flatten_past_actions]
+        # where flatten_past_states has shape (batch_size, lookback_timesteps * n_state_features)
+        # and is organized as [t0_f0, t0_f1, ..., t0_fn, t1_f0, t1_f1, ..., t1_fn, ..., t(L-1)_f0, ..., t(L-1)_fn]
         feature_begin_idx = state_config["feature_begin_idx"]
+        lookback_timesteps = self.dataset_config["lookback_timesteps"]
+        n_state_features = self.dataset_config["states_size"]
+        
+        # For static models: extract from the most recent timestep (last timestep) for this feature
+        # Input index = (lookback_timesteps - 1) * n_state_features + feature_begin_idx
+        correct_input_idx = (lookback_timesteps - 1) * n_state_features + feature_begin_idx
         
         if feature_type == "numerical":
-            return StaticRegressor(feature_begin_idx)
+            return StaticRegressor(correct_input_idx)
         elif feature_type in ["categorial", "binary"]:
-            return StaticClassifier(feature_begin_idx)
+            return StaticClassifier(correct_input_idx)
         else:
             raise ValueError(f"Unknown feature type: {feature_type}")
     
