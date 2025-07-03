@@ -26,7 +26,7 @@ class CEMDiscretePlanner(CEMPlanner):
         population_size, history_dim, state_dim = states.shape
         trajectories = []
         num_models = len(models)
-        model_predictions = [[] for _ in range(num_models)]
+        model_predictions = [[] for _ in range(1)]
 
         next_states = models[0].forward(states, action_history)
         model_predictions[0].append(next_states)
@@ -42,17 +42,19 @@ class CEMDiscretePlanner(CEMPlanner):
 
             action_history = np.roll(action_history, shift=-1, axis=1)
             action_history[:, -1, :] = current_actions_one_hot
-
-            for idx, model in enumerate(models):
-                next_states = model.forward(states, action_history)
-                model_predictions[idx].append(next_states)
+            
+            # Random model index
+            model_idx = np.random.randint(0, len(models))
+            model = models[model_idx]
+            next_states = model.forward(states, action_history)
+            model_predictions[0].append(next_states)
 
             # Update states for next timestep (using the first model as reference)
             states = np.roll(states, shift=-1, axis=1)
             states[:, -1, :] = model_predictions[0][-1]
 
         # Convert lists to numpy arrays
-        for idx in range(num_models):
+        for idx in range(1):
             model_predictions[idx] = np.stack(model_predictions[idx], axis=1)  # (population_size, horizon, state_dim)
 
         return model_predictions
