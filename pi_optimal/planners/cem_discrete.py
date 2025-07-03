@@ -28,6 +28,13 @@ class CEMDiscretePlanner(CEMPlanner):
         num_models = len(models)
         model_predictions = [[] for _ in range(num_models)]
 
+        next_states = models[0].forward(states, action_history)
+        model_predictions[0].append(next_states)
+
+        # Update states for next timestep (using the first model as reference)
+        states = np.roll(states, shift=-1, axis=1)
+        states[:, -1, :] = model_predictions[0][-1]
+        
         for t in tqdm(range(self.horizon), desc="Simulating trajectories"):
             current_actions = actions[:, t]
             current_actions_one_hot = np.zeros((self.population_size, self.action_dim))
